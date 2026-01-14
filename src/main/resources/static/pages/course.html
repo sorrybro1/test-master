@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>课程实验详情</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+
+    <link rel="stylesheet" href="../css/top.css">
+
+    <style>
+        /* 页面主体样式调整，避免被导航栏遮挡 */
+        body { padding-top: 0; }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            border-right: 1px solid #eee;
+            /* 减去导航栏的大致高度，防止滚动条溢出 */
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            padding-right: 0;
+            position: fixed; /* 固定侧边栏 */
+            top: 80px; /* 根据导航栏高度调整，JS会动态覆盖它 */
+            bottom: 0;
+        }
+
+        .sidebar .list-group-item { cursor: pointer; border-radius: 0; border-left: 0; border-right: 0;}
+        .sidebar .list-group-item.active { background-color: #4682B4; border-color: #4682B4; }
+
+        /* 右侧内容区域，向右偏移以让出侧边栏位置 */
+        .content-area {
+            padding-left: 20px;
+            margin-left: 25%; /* 对应 col-sm-3 的宽度 */
+            margin-top: 20px;
+        }
+
+        .page-header { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+        pre.prettyprint {
+            border: 1px solid #ccc;
+            background-color: #f7f7f7;
+            padding: 10px;
+            max-height: 600px;
+            overflow: auto;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+        }
+        li.L0, li.L1, li.L2, li.L3, li.L5, li.L6, li.L7, li.L8 { list-style-type: decimal !important; }
+
+        .panel-title a { display: inline-block; width: 100%; text-decoration: none; color: #333; }
+        .panel-title a:hover { color: #4682B4; }
+        .panel-title a .glyphicon { float: right; top: 2px; color: #888; }
+
+        .btn-area { margin-top: -55px; margin-bottom: 20px; position: relative; z-index: 10; .btn-area button {
+            display: inline-block !important;
+            margin-right: 10px;  /* 添加间距 */
+        }}
+        .muted { color: #888; font-size: 0.9em; }
+        .modal-content { border-radius: 6px; }
+    </style>
+</head>
+
+<body>
+<div id="nav-placeholder"></div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-3 sidebar" id="sidebar-container">
+            <h4 style="padding-left: 15px; color: #4682B4; font-weight: bold;">课程目录</h4>
+            <div class="list-group" id="course-list">
+                <div class="list-group-item muted">正在加载目录...</div>
+            </div>
+        </div>
+
+        <div class="col-sm-9 content-area" id="main-area">
+            <h2 id="c-title" class="page-header">请选择左侧课程</h2>
+
+            <div class="panel panel-default">
+                <div class="panel-body" style="padding: 0px 15px;"> <!-- 增加底部内边距 -->
+                    <div class="btn-area" style="
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 8px;  /* 向下平移 */
+            padding-top: 10px;  /* 增加顶部内边距 */
+        ">
+                        <button id="btn-code2" class="btn btn-info" type="button" onclick="showCode()" style="margin-left: 15px;">
+                            <span class="glyphicon glyphicon-download-alt"></span> 源码下载
+                        </button>
+                        <button id="btn-run2" class="btn btn-success" type="button" onclick="showRun()" style="margin-left: 15px;">
+                            <span class="glyphicon glyphicon-play"></span> 程序运行
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" id="contentid">
+            <input type="hidden" id="enabled">
+            <input type="hidden" id="path">
+            <input type="hidden" id="scodeExe">
+            <input type="hidden" id="tidHidden">
+
+            <div id="main-content-panels">
+                <div class="panel panel-default" id="panel-content">
+                    <div class="panel-heading">实验内容</div>
+                    <div class="panel-body" id="one"></div>
+                </div>
+
+                <div class="panel panel-default" id="panel-purpose">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" href="#collapsePurpose">
+                                实验目的
+                                <span class="glyphicon glyphicon-menu-down"></span>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="collapsePurpose" class="panel-collapse collapse in">
+                        <div class="panel-body" id="two"></div>
+                    </div>
+                </div>
+
+                <div class="panel panel-default" id="panel-theory">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" href="#collapseTheory">
+                                实验原理
+                                <span class="glyphicon glyphicon-menu-down"></span>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="collapseTheory" class="panel-collapse collapse in">
+                        <div class="panel-body" id="three"></div>
+                    </div>
+                </div>
+
+                <div class="panel panel-default" id="panel-param">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" href="#collapseParam">
+                                算法参数
+                                <span class="glyphicon glyphicon-menu-down"></span>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="collapseParam" class="panel-collapse collapse in">
+                        <div class="panel-body" id="four"></div>
+                    </div>
+                </div>
+
+                <div class="panel panel-default" id="panel-flow">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" href="#collapseFlow">
+                                算法流程
+                                <span class="glyphicon glyphicon-menu-down"></span>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="collapseFlow" class="panel-collapse collapse in">
+                        <div class="panel-body" id="five"></div>
+                    </div>
+                </div>
+
+                <div class="panel panel-default" id="panel-result">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" href="#collapseResult">
+                                运行结果
+                                <span class="glyphicon glyphicon-menu-down"></span>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="collapseResult" class="panel-collapse collapse in">
+                        <div class="panel-body" id="six"></div>
+                    </div>
+                </div>
+
+                <div class="panel panel-default" id="panel-code">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <a data-toggle="collapse" href="#collapseCode">
+                                源码阅读
+                                <span class="glyphicon glyphicon-menu-down"></span>
+                            </a>
+                        </h3>
+                    </div>
+                    <div id="collapseCode" class="panel-collapse collapse in">
+                        <div class="panel-body">
+                            <pre class="prettyprint linenums" id="codeRun"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div> <div class="muted" id="hint" style="margin-top: 10px; display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="margin-top: 15%;">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id='modal_message' style="text-align: center; margin-bottom: 20px;">
+                    <h3><span class="glyphicon glyphicon-console"></span> 正在启动程序...</h3>
+                </div>
+                <div class="progress progress-striped active" style="margin-bottom: 10px;">
+                    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="100"
+                         aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+                        <span class="sr-only">正在加载</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.js"></script>
+
+<script>
+    var API = {
+        list:   "/content/list",
+        detail: "/content/detail",
+        download: "/content/download",
+        run:      "/toIndex/checkPayExe.do"
+    };
+
+    $(function () {
+        // 【核心修改】加载导航栏逻辑
+        $("#nav-placeholder").load("../common/nav.html", function () {
+            // 1. 获取导航栏高度
+            var h = $("#nav_id").height() || 50;
+
+            // 2. 调整 body 顶部内边距，防止内容被遮挡
+            $("body").css("padding-top", h + "px");
+
+            // 3. 调整侧边栏的顶部位置，使其刚好位于导航栏下方
+            $(".sidebar").css("top", h + "px");
+
+            // 4. 执行导航栏的初始化脚本（如果有）
+            if (typeof getNavigation === "function") {
+                getNavigation();
+            }
+        });
+
+        // 原有的初始化逻辑
+        $("#btn-code").hide();
+        loadList();
+    });
+
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return decodeURIComponent(r[2]);
+        return null;
+    }
+
+    function normalizeHtml(v) {
+        if (v === undefined || v === null) return "";
+        return String(v);
+    }
+
+    function isBlankHtml(v) {
+        var s = normalizeHtml(v);
+        var pure = s.replace(/&nbsp;/ig, "")
+            .replace(/<br\s*\/?>/ig, "")
+            .replace(/<p>\s*<\/p>/ig, "")
+            .replace(/<div>\s*<\/div>/ig, "")
+            .replace(/<span>\s*<\/span>/ig, "")
+            .replace(/\s+/g, "");
+        return pure.length === 0;
+    }
+
+    function setPanelVisible(panelId, contentHtmlOrText) {
+        if (isBlankHtml(contentHtmlOrText)) {
+            $("#" + panelId).hide();
+        } else {
+            $("#" + panelId).show();
+        }
+    }
+
+    function setHint(msg) {
+        if (msg && msg.trim().length > 0) {
+            $("#hint").text(msg).show();
+        } else {
+            $("#hint").hide().text("");
+        }
+    }
+
+    function renderList(items) {
+        var $list = $("#course-list");
+        $list.empty();
+
+        if (!items || items.length === 0) {
+            $list.append('<div class="list-group-item muted">暂无数据</div>');
+            return;
+        }
+
+        items.sort(function(a, b) {
+            function extractNo(title) {
+                if (!title) return null;
+                var m = String(title).match(/[（(]\s*(\d+)\s*[）)]/);
+                return m ? parseInt(m[1], 10) : null;
+            }
+            var an = extractNo(a.title);
+            var bn = extractNo(b.title);
+            if (an !== null && bn !== null && an !== bn) return an - bn;
+            if (an !== null && bn === null) return -1;
+            if (an === null && bn !== null) return 1;
+
+            var ap = (a.pid !== undefined && a.pid !== null) ? parseInt(a.pid, 10) : 0;
+            var bp = (b.pid !== undefined && b.pid !== null) ? parseInt(b.pid, 10) : 0;
+            if (ap !== bp) return ap - bp;
+            return parseInt(a.id, 10) - parseInt(b.id, 10);
+        });
+
+        items.forEach(function(it) {
+            var id = it.id;
+            var title = it.title || ("未命名课程 #" + id);
+            var badge = "";
+            var html = '<a class="list-group-item" data-id="' + id + '">' + title + badge + '</a>';
+            $list.append(html);
+        });
+
+        $("#course-list .list-group-item").off("click").on("click", function() {
+            $("#course-list .list-group-item").removeClass("active");
+            $(this).addClass("active");
+            var id = $(this).data("id");
+            loadDetail(id);
+        });
+    }
+
+    function loadList() {
+        var tid = getQueryString("tid") || "";
+        $("#tidHidden").val(tid);
+
+        $.ajax({
+            type: "post",
+            url: API.list,
+            data: { tid: tid },
+            dataType: "json",
+            success: function(data) {
+                var items = Array.isArray(data) ? data : (data && data.data ? data.data : []);
+                renderList(items);
+                if (items && items.length > 0) {
+                    $("#course-list .list-group-item").first().click();
+                }
+            },
+            error: function(xhr) {
+                $("#course-list").html('<div class="list-group-item text-danger">目录加载失败</div>');
+            }
+        });
+    }
+
+    function loadDetail(id) {
+        setHint("");
+        $("#main-content-panels").css("opacity", "0.5");
+
+        $.ajax({
+            type: "post",
+            url: API.detail,
+            data: { id: id },
+            dataType: "json",
+            success: function(data) {
+                $("#main-content-panels").css("opacity", "1");
+                if (!data) return;
+
+                $("#c-title").text(data.title || "无标题");
+                $("#contentid").val(data.id || "");
+                $("#enabled").val(data.enabled !== undefined ? data.enabled : (data.type !== undefined ? data.type : ""));
+                $("#path").val(data.sdll || "");
+                $("#scodeExe").val(data.scode || "");
+                $("#tidHidden").val(data.tid || $("#tidHidden").val() || "");
+
+                $("#one").html(normalizeHtml(data.content));
+                $("#two").html(normalizeHtml(data.experPurpose || data.objective));
+                $("#three").html(normalizeHtml(data.experTheory));
+                $("#four").html(normalizeHtml(data.ariParameter));
+                $("#five").html(normalizeHtml(data.ariFlow));
+                $("#six").html(normalizeHtml(data.comResults));
+
+                var codeTxt = normalizeHtml(data.codetext);
+                $("#codeRun").text(codeTxt).removeClass("prettyprinted");
+
+                setPanelVisible("panel-content", $("#one").html());
+                setPanelVisible("panel-purpose", $("#two").html());
+                setPanelVisible("panel-theory", $("#three").html());
+                setPanelVisible("panel-param", $("#four").html());
+                setPanelVisible("panel-flow", $("#five").html());
+                setPanelVisible("panel-result", $("#six").html());
+                setPanelVisible("panel-code", codeTxt);
+
+                var enabled = $("#enabled").val();
+                if (enabled == "1") {
+                    $("#btn-code").show();
+                } else {
+                    $("#btn-code").hide();
+                }
+
+                if(codeTxt.length > 0 && typeof prettyPrint === 'function') {
+                    prettyPrint();
+                }
+            },
+            error: function(xhr) {
+                $("#main-content-panels").css("opacity", "1");
+                setHint("详情加载失败：" + xhr.status);
+            }
+        });
+    }
+
+    function showCode() {
+        var id = $("#contentid").val();
+        var tid = $("#tidHidden").val();
+        var path = $("#path").val();
+
+        if (!path || path === "null" || path === "") {
+            alert("文件不存在！");
+            return;
+        }
+        window.location.href = API.download + "?id=" + encodeURIComponent(id) + "&tid=" + encodeURIComponent(tid);
+    }
+
+    function showRun() {
+        var id = $("#contentid").val();
+        var tid = $("#tidHidden").val();
+        var scode = $("#scodeExe").val();
+
+        if (!scode || scode === "null" || scode === "") {
+            alert("可执行程序不存在！");
+            return;
+        }
+
+        $('#alertModal').modal('show');
+        setTimeout(function(){
+            window.location.href = API.run + "?id=" + encodeURIComponent(id) + "&tid=" + encodeURIComponent(tid);
+            setTimeout(function(){ $('#alertModal').modal('hide'); }, 5000);
+        }, 1000);
+    }
+</script>
+</body>
+</html>

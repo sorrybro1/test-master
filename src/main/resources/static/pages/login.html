@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码工程技术人员实训系统</title>
+
+    <!-- Bootstrap 3 CSS -->
+    <link rel="stylesheet" href="../js/bootstrap-3.3.7/css/bootstrap.css">
+
+    <style type="text/css">
+        body {
+            margin: 0;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+
+        .cen {
+            width: 500px;
+            height: 200px;
+            position: absolute;
+            top: 50%;
+            left: 48%;
+            margin-left: -200px;
+            margin-top: -200px;
+            z-index: 10;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .border_bg {
+            background: #fff;
+            width: 500px;
+            height: 240px;
+            margin-top: 38px;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .tit {
+            background-color: #336699;
+            width: 100%;
+            height: 10px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .tt {
+            width: 50%;
+            text-align: center;
+            background-color: #f8f9fa;
+            border: none;
+        }
+
+        .tt.active {
+            background-color: white;
+        }
+
+        .tt a {
+            margin: 0;
+            border: none;
+            color: #333;
+        }
+
+        .tt.active a {
+            color: #336699;
+            font-weight: bold;
+        }
+
+        .tab-pane {
+            padding: 20px;
+        }
+
+        .bg_out {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("../images/112.jpg");
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+            -webkit-background-size: cover;
+            -o-background-size: cover;
+            zoom: 1;
+            margin: 0;
+            padding: 0;
+            z-index: 1;
+        }
+
+        .form-group label {
+            font-weight: normal;
+            color: #555;
+        }
+
+        .btn-primary {
+            background-color: #336699;
+            border-color: #2a5577;
+            padding: 6px 25px;
+        }
+
+        .btn-primary:hover {
+            background-color: #2a5577;
+            border-color: #1e3f5a;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: 1000;
+            text-align: center;
+            padding-top: 20%;
+        }
+
+        .loading-spinner {
+            font-size: 24px;
+            color: #336699;
+        }
+
+        .error-message {
+            color: #d9534f;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<!-- 背景图片 -->
+<div class="bg_out"></div>
+
+<!-- 加载遮罩 -->
+<div class="loading" id="loading">
+    <div class="loading-spinner">
+        <span class="glyphicon glyphicon-refresh glyphicon-spin"></span> 登录中...
+    </div>
+</div>
+
+<!-- 登录框容器 -->
+<div class="container">
+    <div class="cen">
+        <h2>密码工程技术人员实训系统</h2>
+        <div class="border_bg">
+            <div class="tit"></div>
+            <ul id="myTab1" class="nav nav-tabs">
+                <li class="active tt"><a onclick="updateRole(1)" href="#student" data-toggle="tab">学生登录</a></li>
+                <li class="tt"><a onclick="updateRole(2)" href="#teacher" data-toggle="tab">老师登录</a></li>
+                <input type="hidden" id="role" value="1">
+            </ul>
+
+            <div id="myTabContent1" class="tab-content">
+                <!-- 学生登录 -->
+                <div class="tab-pane fade in active" id="student">
+                    <form class="form-horizontal" role="form" id="studentForm" onsubmit="return false">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">账号</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="username"
+                                       placeholder="请输入学号/账号" autocomplete="username">
+                                <div class="error-message" id="usernameError"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">密码</label>
+                            <div class="col-sm-10">
+                                <input type="password" class="form-control" id="passwd"
+                                       placeholder="请输入密码" autocomplete="current-password">
+                                <div class="error-message" id="passwordError"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-offset-5 col-sm-7">
+                                <button type="button" onclick="login(1);" class="btn btn-primary">
+                                    登录
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 老师登录 -->
+                <div class="tab-pane fade" id="teacher">
+                    <form class="form-horizontal" role="form" id="teacherForm" onsubmit="return false">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">账号</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="username2"
+                                       placeholder="请输入工号/账号" autocomplete="username">
+                                <div class="error-message" id="username2Error"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">密码</label>
+                            <div class="col-sm-10">
+                                <input type="password" class="form-control" id="passwd2"
+                                       placeholder="请输入密码" autocomplete="current-password">
+                                <div class="error-message" id="password2Error"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-offset-5 col-sm-7">
+                                <button type="button" onclick="login(2);" class="btn btn-primary">
+                                    登录
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 版本信息 -->
+        <div style="text-align: center; margin-top: 20px; color: white; font-size: 12px;">
+            密码工程技术人员实训系统 v1.0 | 技术支持
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript 依赖 -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap-3.3.7/js/bootstrap.js"></script>
+
+<script type="text/javascript">
+    // 全局变量
+    let currentRole = 1;
+
+    // 初始化
+    $(document).ready(function() {
+        console.log('登录页面已加载');
+        $('#studentForm, #teacherForm').on('submit', function(e){
+            e.preventDefault();
+            return false;
+        });
+        // 绑定回车事件
+        bindEnterKey();
+
+        // 绑定输入框清空错误
+        bindInputClearError();
+    });
+
+    // 绑定回车键事件
+    function bindEnterKey() {
+        $(document).on('keydown', function(e) {
+            if (e.keyCode === 13) { // 回车键
+                e.preventDefault();
+                validateAndLogin();
+            }
+        });
+    }
+
+    // 绑定输入框清空错误提示
+    function bindInputClearError() {
+        $('input').on('input', function() {
+            var errorId = $(this).attr('id') + 'Error';
+            $('#' + errorId).hide();
+        });
+    }
+
+    // 切换角色
+    function updateRole(role) {
+        currentRole = role;
+        $('#role').val(role);
+
+        // 清空所有错误提示
+        $('.error-message').hide();
+    }
+
+    // 验证输入并登录
+    function validateAndLogin() {
+        var username, password;
+
+        if (currentRole === 1) {
+            username = $('#username').val().trim();
+            password = $('#passwd').val();
+        } else {
+            username = $('#username2').val().trim();
+            password = $('#passwd2').val();
+        }
+
+        // 验证用户名
+        if (!username) {
+            showError(currentRole === 1 ? 'usernameError' : 'username2Error', '账号不能为空');
+            return false;
+        }
+
+        // 验证密码
+        if (!password) {
+            showError(currentRole === 1 ? 'passwordError' : 'password2Error', '密码不能为空');
+            return false;
+        }
+
+        // 执行登录
+        login(currentRole);
+        return true;
+    }
+
+    // 显示错误信息
+    function showError(elementId, message) {
+        $('#' + elementId).text(message).show();
+    }
+
+    // 登录函数
+    function login(role) {
+        var username, password;
+
+        if (role === 1) {
+            username = $('#username').val().trim();
+            password = $('#passwd').val();
+        } else {
+            username = $('#username2').val().trim();
+            password = $('#passwd2').val();
+        }
+
+        // 再次验证
+        if (!username || !password) {
+            alert('请输入完整的账号和密码');
+            return;
+        }
+
+        // 显示加载动画
+        $('#loading').show();
+
+        // 构建请求数据
+        var loginData = {
+            username: username,
+            password: password,
+            role: role
+        };
+
+        console.log('发送登录请求:', loginData);
+        // 发送登录请求到新后端 API
+        $.ajax({
+            type: "POST",
+            url: "/api/auth/login",                         // 新后端接口
+            contentType: "application/json",
+            data: JSON.stringify(loginData),
+            dataType: "json",
+            timeout: 10000, // 10秒超时
+            success: function(response) {
+                $('#loading').hide();
+
+                if (response.success) {
+                    console.log('登录成功:', response);
+
+                    // 保存 token 到 localStorage
+                    if (response.token) {
+                        localStorage.setItem('auth_token', response.token);
+                        localStorage.setItem('user_info', JSON.stringify(response.userInfo));
+                    }
+
+                    // 根据角色跳转到不同页面
+                    redirectAfterLogin(role);
+
+                } else {
+                    console.log('登录失败:', response.message);
+                    alert(response.message);
+
+                    // 清空密码框
+                    if (role === 1) {
+                        $('#passwd').val('');
+                    } else {
+                        $('#passwd2').val('');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#loading').hide();
+
+                if (xhr.status === 401) {
+                    alert('账号或密码错误，请重试');
+                } else if (xhr.status === 0) {
+                    alert('无法连接到服务器，请检查网络或后端服务是否启动');
+                } else {
+                    alert('登录请求失败: ' + (xhr.responseJSON?.message || error));
+                }
+
+                console.error('登录错误:', status, error, xhr.responseText);
+            }
+        });
+    }
+
+    // 登录成功后跳转
+    function redirectAfterLogin(role) {
+        var redirectUrl = '';
+
+        // 根据角色跳转到不同页面
+        switch(role) {
+            case 1: // 学生
+                redirectUrl = '/pages/index.html';
+                break;
+            case 2: // 老师
+                redirectUrl = '/pages/index.html';
+                break;
+            default:
+                redirectUrl = '/pages/index.html';
+        }
+
+        console.log('跳转到:', redirectUrl);
+
+        // 延迟跳转，让用户看到成功提示
+        setTimeout(function() {
+            window.location.href = redirectUrl;
+        }, 500);
+    }
+
+    // 检查是否已登录
+    function checkLoginStatus() {
+        var token = localStorage.getItem('auth_token');
+        if (token) {
+            // 如果有 token，尝试获取用户信息
+            $.ajax({
+                type: "GET",
+                url: "/api/auth/user-info",
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function(userInfo) {
+                    // 如果获取成功，直接跳转到对应页面
+                    redirectAfterLogin(userInfo.role);
+                },
+                error: function() {
+                    // token 无效，清除本地存储
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user_info');
+                }
+            });
+        }
+    }
+    // 检查是否已登录
+    fetch('/api/auth/check')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 已登录，直接跳转到首页
+                window.location.href = '/index.html';
+            }
+        });
+    // 页面加载时检查登录状态
+    checkLoginStatus();
+
+
+</script>
+</body>
+</html>

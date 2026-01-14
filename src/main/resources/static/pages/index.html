@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>首页</title>
+    <link rel="stylesheet" href="../js/bootstrap-3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/top.css">
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/foot.css">
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+
+<div class="bg">
+    <div class="container">
+        <h1>密码工程技术人员实训系统</h1>
+        <p>本系统依据“密码工程技术人员”国家职业标准专业能力的要求，为密码工程人员实际操作技术技能的培养研制的实训系统，包括密码算法与协议实现、密码产品与系统研制、密码检测与认证、密码应用安全评估 、密码系统集成、密码管理等模块。使用者通过本系统的学习和训练，可以理解密码工程操作原理，掌握密码工程实际操作技术技能。</p>
+        <p>
+            <button type="button" class="btn btn-lg btn-success" onclick="selectContent()">开始</button>
+        </p>
+    </div>
+</div>
+
+<div class="container cen">
+    <h1>系统简介</h1>
+    <p class="texin">本系统包含密码工程技术实训模块6个，同时还包括学生和教师（个人中心）管理模块、课程管理模块、程序运行、源码下载等。密码工程技术实训系统包含密码算法与协议实现、密码产品与系统研制、密码检测与认证、密码应用安全评估 、密码系统集成、密码管理等模块教学系统。对每一实训项目，都包含了原理、参数、流程、源代码、实现及运行结果等实验模块，使读者能快速、全面、准确的理解并掌握从密码工程原理到实现的整体过程。实训系统中密码工程实现的C语言（或C++）代码均在Visual Studio 2022 平台上进行了实现和性能测试。
+        <a href="#" onclick="loadMore()"><span class="more">更多</span></a>
+    </p>
+</div>
+
+<div id="foot-placeholder"></div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+    $(function () {
+        // 4. 核心：加载导航栏
+        $("#nav-placeholder").load("common/nav.html", function() {
+            // 导航栏加载完成后，处理样式（原本 index.jsp 的逻辑）
+            var nav_height = $("#nav_id").height();
+            $(".bg").css({"margin-top": nav_height + "px"});
+
+            // 触发导航栏内部的菜单获取逻辑
+            getNavigation();
+        });
+
+        // 加载页脚
+        $("#foot-placeholder").load("common/foot.html");
+    });
+
+    function selectContent(){
+        // 跳转到后端接口或新的 HTML 页面
+        //window.location.href = "/toIndex/getuserManagement.do";
+
+        window.location.href = "/pages/course.html?tid=78"
+    }
+
+    function loadMore() {
+        window.location.href = "/toIndex/getMore.do";
+    }
+</script>
+</body>
+</html>

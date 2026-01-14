@@ -1,0 +1,51 @@
+<nav id="nav_id" class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <ul id="daohang" class="nav navbar-nav">
+        </ul>
+
+        <ul class="nav navbar-nav navbar-right" style="position: absolute;right:15px;top:0px;">
+            <li><a href="/login/loginout.do"><span class="glyphicon glyphicon-log-out"></span> 退出</a></li>
+        </ul>
+    </div>
+</nav>
+
+<script type="text/javascript">
+    $(function () {
+        getNavigation();
+    });
+
+    function getNavigation() {
+        $.ajax({
+            type: "post",
+            url: "/classification/getNavigation.do", // 绝对路径
+            dataType: "json", // 明确接收 JSON
+            cache: false,
+            async: false,
+            success:function(data){
+                // data 是后端返回的 List<Classification>，格式如: [{id:1, name:"基础算法"}, ...]
+                var htmlContent = "";
+
+                // 1. 首页
+                htmlContent += '<li><a href="/pages/index.html">首页</a></li>';
+
+                // 2. 动态菜单
+                if(data && data.length > 0) {
+                    $.each(data, function(index, item) {
+                        // 构造链接：调用 Controller 进行跳转
+                        var url = "/pages/course.html?tid=" + item.id;
+                        htmlContent += '<li><a href="' + url + '">' + item.name + '</a></li>';
+                    });
+                }
+
+                // 3. 个人中心 (假设也跳转到用户管理页，或者您可以改为 /user/center.html)
+                htmlContent += '<li><a href="/user/userManagement.html">个人中心</a></li>';
+
+                // 渲染
+                $("#daohang").html(htmlContent);
+            },
+            error:function(){
+                console.log("导航栏数据获取失败");
+            }
+        });
+    }
+</script>

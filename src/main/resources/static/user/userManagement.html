@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>用户管理</title>
+
+    <link rel="stylesheet" href="/js/bootstrap-3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/js/bootstrap-table/dist/bootstrap-table.min.css">
+
+    <style>
+        .main-container {
+            margin-top: 80px; /* 避开顶部固定导航栏 */
+            padding: 20px;
+        }
+        .page-header {
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+
+<div class="container main-container">
+    <div class="page-header">
+        <h3>用户管理列表 <small id="sub-title"></small></h3>
+    </div>
+
+    <div id="toolbar" class="btn-group">
+    </div>
+
+    <table id="user-table"></table>
+</div>
+
+<div id="foot-placeholder"></div>
+
+<script src="/js/jquery.min.js"></script>
+<script src="/js/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+<script src="/js/bootstrap-table/dist/bootstrap-table.min.js"></script>
+<script src="/js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+
+<script type="text/javascript">
+    $(function () {
+        // 加载公共导航栏和页脚
+        $("#nav-placeholder").load("/common/nav.html");
+        $("#foot-placeholder").load("/common/foot.html");
+
+        // 获取 URL 传过来的 tid 参数
+        var tid = getQueryString("tid");
+        if(tid){
+            $("#sub-title").text("(当前分类ID: " + tid + ")");
+        }
+
+        // 初始化表格
+        initTable(tid);
+    });
+
+    function initTable(tid) {
+        $('#user-table').bootstrapTable({
+            url: '/user/list',       // 【重点】请求后端的接口
+            method: 'post',          // 请求方式
+            dataType: 'json',        // 预期服务器返回 JSON
+            contentType: "application/x-www-form-urlencoded", // 发送表单格式数据
+
+            toolbar: '#toolbar',     // 工具按钮用哪个容器
+            striped: true,           // 是否显示行间隔色
+            cache: false,            // 是否使用缓存
+            pagination: true,        // 是否显示分页
+            sortable: true,          // 是否启用排序
+            sidePagination: "client",// 分页方式：client客户端分页，server服务端分页(看后端怎么写)
+            pageNumber: 1,           // 初始化加载第一页
+            pageSize: 10,            // 每页的记录行数
+            pageList: [10, 25, 50],  // 可供选择的每页的行数
+            search: true,            // 是否显示表格搜索
+            showColumns: true,       // 是否显示所有的列
+            showRefresh: true,       // 是否显示刷新按钮
+
+            // 【重点】发送给后端的参数
+            queryParams: function (params) {
+                return {
+                    tid: tid // 把 tid 传给后端进行筛选
+                };
+            },
+
+            // 【重点】列配置，field 必须对应 Java 实体类的属性名
+            columns: [{
+                checkbox: true
+            }, {
+                field: 'id',
+                title: '编号',
+                sortable: true
+            }, {
+                field: 'username',
+                title: '账号'
+            }, {
+                field: 'name',
+                title: '真实姓名'
+            }, {
+                field: 'sex',
+                title: '性别',
+                formatter: function(value, row, index) {
+                    // 如果数据库存的是 1/0，可以在这里转义
+                    return value;
+                }
+            }, {
+                field: 'phone',
+                title: '电话'
+            }, {
+                field: 'email',
+                title: '邮箱'
+            }, {
+                field: 'operate',
+                title: '操作',
+                align: 'center',
+                formatter: function(value, row, index) {
+                    // 动态生成操作按钮
+                    var result = "";
+                    result += '<a href="javascript:void(0)" onclick="editUser(\'' + row.id + '\')" title="编辑">编辑</a> ';
+                    result += '<a href="javascript:void(0)" onclick="delUser(\'' + row.id + '\')" title="删除" style="color:red">删除</a>';
+                    return result;
+                }
+            }]
+        });
+    }
+
+    // 工具函数：获取 URL 参数
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]); return null;
+    }
+
+    // 示例操作函数
+    function editUser(id) {
+        alert("点击了编辑，ID: " + id);
+    }
+    function delUser(id) {
+        if(confirm("确定要删除吗？")) {
+            alert("执行删除逻辑，ID: " + id);
+        }
+    }
+</script>
+</body>
+</html>

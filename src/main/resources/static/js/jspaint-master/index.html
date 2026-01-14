@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>JS Paint</title>
+		<link href="styles/normalize.css" rel="stylesheet" type="text/css">
+		<link href="styles/layout.css" rel="stylesheet" type="text/css">
+		<link href="styles/print.css" rel="stylesheet" type="text/css" media="print">
+		<link rel="icon" href="images/icons/16.png" sizes="16x16" type="image/png">
+		<link rel="icon" href="images/icons/32.png" sizes="32x32" type="image/png">
+		<link rel="icon" href="images/icons/48.png" sizes="48x48" type="image/png">
+		<link rel="icon" href="images/icons/128.png" sizes="128x128" type="image/png">
+		<link rel="icon" href="images/icons/windows.ico" sizes="16x16 32x32 48x48" type="image/icon">
+		<meta name="viewport" content="width=device-width, user-scalable=no">
+		<meta name="description" content="MS Paint recreated in JavaScript, with extra features" />
+		<meta property="og:title" content="JS Paint" />
+		<meta property="og:description" content="MS Paint recreated in JavaScript, with extra features" />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://jspaint.app" />
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:image" content="https://jspaint.app/images/meta/facebook-card.png" />
+		<meta name="twitter:title" content="JS Paint">
+		<meta name="twitter:description" content="MS Paint recreated in JavaScript, with extra features">
+		<meta name="twitter:image" content="https://jspaint.app/images/meta/twitter-card.png">
+		<meta name="twitter:card" content="summary_large_image">
+		<meta name="twitter:site" content="@isaiahodhner">
+		<meta name="twitter:creator" content="@isaiahodhner">
+
+		<script src="src/theme.js"></script>
+	</head>
+	<body>
+		<div id="about-paint" style="display: none">
+			<h1><img src="images/icons/32.png" alt=""/> JS Paint <small class="version-number" title="Is that a thing? What I mean is, expect bugs!">Public Alpha</small></h1>
+			<hr/>
+			<!--<p>JS Paint is a web-based remake of MS Paint by <a href="https://isaiahodhner.ml/">Isaiah Odhner</a>.</p>
+			<p>Read about the project and <b>extra features</b> on <a href="https://github.com/1j01/jspaint#readme">the README</a>.</p>
+			<p>Request features and report bugs <a href="https://github.com/1j01/jspaint/issues">on GitHub</a>
+			or <a href="mailto:isaiahodhner@gmail.com?subject=JS%20Paint">by email</a>.</p>
+			<p>If you want to support the project &amp; cover domain fees:
+				<a href="https://www.paypal.me/IsaiahOdhner" target="_blank">paypal.me/IsaiahOdhner</a>
+			</p>-->
+		</div>
+
+		<script src="lib/jquery.min.js"></script>
+		<script src="lib/pep.js"></script>
+		<script src="lib/canvas.toBlob.js"></script>
+		<script src="lib/gif.js/gif.js"></script>
+		<script src="lib/palette.js"></script>
+		<script src="lib/FileSaver.js"></script>
+		<script src="lib/font-detective.js"></script>
+		<script src="lib/libtess.min.js"></script>
+
+		<script src="src/helpers.js"></script>
+		<script src="src/storage.js"></script>
+		<script src="src/$Component.js"></script>
+		<script src="src/$Window.js"></script>
+		<script src="src/$MenuBar.js"></script>
+		<script src="src/$ToolBox.js"></script>
+		<script src="src/$ColorBox.js"></script>
+		<script src="src/$FontBox.js"></script>
+		<script src="src/$Handles.js"></script>
+		<script src="src/OnCanvasObject.js"></script>
+		<script src="src/Selection.js"></script>
+		<script src="src/TextBox.js"></script>
+		<script src="src/image-manipulation.js"></script>
+		<script src="src/tool-options.js"></script>
+		<script src="src/tools.js"></script>
+		<!--<script src="src/extra-tools.js"></script>-->
+		<script src="src/functions.js"></script>
+		<script src="src/manage-storage.js"></script>
+		<script src="src/imgur.js"></script>
+		<script src="src/help.js"></script>
+		<script src="src/app.js"></script>
+		<script src="src/menus.js"></script>
+		<script src="src/canvas-change.js"></script>
+		<script src="src/sessions.js"></script>
+		<script src="lib/konami.js"></script>
+		<script src="src/vaporwave-fun.js"></script>
+
+		<script>
+			// Partial support for IE with a general polyfill
+			if(/MSIE \d|Trident.*rv:/.test(navigator.userAgent)){
+				document.write(
+					// '<script src="https://cdn.polyfill.io/v2/polyfill.min.js"><\/script>' +
+					'<style>body { text-align: center; }</style>' +
+					'<div className="not-supported">' +
+						'<h1 className="not-supported-header">Internet Explorer is not supported!</h1>' +
+						'<p className="not-supported-details">Try Chrome, Firefox, or Edge.</p>' +
+					'</div>'
+				);
+			}
+		</script>
+	</body>
+</html>
