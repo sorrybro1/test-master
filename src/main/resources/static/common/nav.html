@@ -4,7 +4,7 @@
         </ul>
 
         <ul class="nav navbar-nav navbar-right" style="position: absolute;right:15px;top:0px;">
-            <li><a href="/login/loginout.do"><span class="glyphicon glyphicon-log-out"></span> 退出</a></li>
+            <li><a href="/pages/login.html" onclick="logoutAndRedirect()"><span class="glyphicon glyphicon-log-out"></span> 退出</a></li>
         </ul>
     </div>
 </nav>
@@ -13,6 +13,26 @@
     $(function () {
         getNavigation();
     });
+
+    // 退出函数
+    function logoutAndRedirect() {
+        // 调用退出接口
+        fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                // 跳转到登录页
+                window.location.href = '/pages/login.html';
+            })
+            .catch(error => {
+                // 即使出错也跳转到登录页
+                window.location.href = '/pages/login.html';
+            });
+
+        // 阻止默认链接跳转
+        return false;
+    }
 
     function getNavigation() {
         $.ajax({
