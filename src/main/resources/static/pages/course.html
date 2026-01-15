@@ -86,10 +86,10 @@
             margin-top: 8px;  /* 向下平移 */
             padding-top: 10px;  /* 增加顶部内边距 */
         ">
-                        <button id="btn-code2" class="btn btn-info" type="button" onclick="showCode()" style="margin-left: 15px;">
+                        <button id="btn-code2" class="btn btn-info" type="button" onclick="downloadScode()" style="margin-left: 15px;">
                             <span class="glyphicon glyphicon-download-alt"></span> 源码下载
                         </button>
-                        <button id="btn-run2" class="btn btn-success" type="button" onclick="showRun()" style="margin-left: 15px;">
+                        <button id="btn-run2" class="btn btn-success" type="button" onclick="downloadSdll()" style="margin-left: 15px;">
                             <span class="glyphicon glyphicon-play"></span> 程序运行
                         </button>
                     </div>
@@ -224,7 +224,8 @@
     var API = {
         list:   "/content/list",
         detail: "/content/detail",
-        download: "/content/download",
+        downloadScode: "/api/file/download/scode",  // 源码下载新接口
+        downloadSdll: "/api/file/download/sdll",  // 程序运行下载新接口
         run:      "/toIndex/checkPayExe.do"
     };
 
@@ -411,34 +412,144 @@
         });
     }
 
-    function showCode() {
-        var id = $("#contentid").val();
-        var tid = $("#tidHidden").val();
-        var path = $("#path").val();
-
-        if (!path || path === "null" || path === "") {
-            alert("文件不存在！");
-            return;
-        }
-        window.location.href = API.download + "?id=" + encodeURIComponent(id) + "&tid=" + encodeURIComponent(tid);
+    // 从URL获取参数
+    function getUrlParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
     }
 
-    function showRun() {
-        var id = $("#contentid").val();
-        var tid = $("#tidHidden").val();
-        var scode = $("#scodeExe").val();
+    // 下载源码
+    // 下载源码（带文件存在性检查）
+    function downloadScode() {
+        // 获取当前选中的内容ID
+        var contentId = $("#contentid").val();
 
-        if (!scode || scode === "null" || scode === "") {
-            alert("可执行程序不存在！");
+        if (!contentId || contentId === "" || contentId === "null") {
+            alert("请先在左侧选择课程内容！");
             return;
         }
 
-        $('#alertModal').modal('show');
-        setTimeout(function(){
-            window.location.href = API.run + "?id=" + encodeURIComponent(id) + "&tid=" + encodeURIComponent(tid);
-            setTimeout(function(){ $('#alertModal').modal('hide'); }, 5000);
-        }, 1000);
+        // 1. 先检查文件是否存在
+        checkFileExists(contentId, true)
+            .then(fileExists => {
+                if (fileExists) {
+                    // 文件存在，执行下载
+                    var url = API.downloadScode + "/" + contentId;
+                    console.log("下载源码URL:", url);
+                    window.open(url, '_blank');
+                } else {
+                    // 文件不存在，提示用户
+                    alert("抱歉，该课程的源码文件暂时不可用！\n请联系管理员上传文件。");
+                }
+            })
+            .catch(error => {
+                console.error("检查文件失败:", error);
+                alert("检查文件时发生错误，请稍后重试！");
+            });
     }
+
+    // 下载程序运行文件（带文件存在性检查）
+    function downloadSdll() {
+        // 获取当前选中的内容ID
+        var contentId = $("#contentid").val();
+
+        if (!contentId || contentId === "" || contentId === "null") {
+            alert("请先在左侧选择课程内容！");
+            return;
+        }
+
+        // 1. 先检查文件是否存在
+        checkFileExists(contentId, false)
+            .then(fileExists => {
+                if (fileExists) {
+                    // 文件存在，执行下载
+                    var url = API.downloadSdll + "/" + contentId;
+                    console.log("下载程序运行文件URL:", url);
+                    window.open(url, '_blank');
+                } else {
+                    // 文件不存在，提示用户
+                    alert("抱歉，该课程的程序运行文件暂时不可用！\n请联系管理员上传文件。");
+                }
+            })
+            .catch(error => {
+                console.error("检查文件失败:", error);
+                alert("检查文件时发生错误，请稍后重试！");
+            });
+    }
+
+    // 检查文件是否存在
+    function checkFileExists(contentId, isScode) {
+        return new Promise((resolve, reject) => {
+            // 获取文件信息
+            fetch(`/api/file/info/${contentId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        // 如果接口返回404或其他错误，说明内容不存在
+                        resolve(false);
+                        return null;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data) {
+                        resolve(false);
+                        return;
+                    }
+
+                    // 检查对应的文件路径字段
+                    var filePath = isScode ? data.scode : data.sdoll;
+
+                    if (!filePath || filePath.trim() === "") {
+                        console.log("数据库字段为空:", isScode ? "scode" : "sdoll");
+                        resolve(false);
+                        return;
+                    }
+
+                    // 还可以进一步检查文件是否真的存在（可选）
+                    checkFileOnServer(contentId, isScode)
+                        .then(serverFileExists => {
+                            resolve(serverFileExists);
+                        })
+                        .catch(() => {
+                            // 即使服务器检查失败，如果数据库有路径也允许尝试下载
+                            resolve(true);
+                        });
+                })
+                .catch(error => {
+                    console.error("检查文件信息失败:", error);
+                    reject(error);
+                });
+        });
+    }
+
+    // 可选：进一步检查服务器上文件是否存在
+    function checkFileOnServer(contentId, isScode) {
+        return new Promise((resolve, reject) => {
+            // 发送HEAD请求检查文件是否存在（不下载文件内容）
+            var url = isScode ?
+                API.downloadScode + "/" + contentId :
+                API.downloadSdoll + "/" + contentId;
+
+            fetch(url, { method: 'HEAD' })
+                .then(response => {
+                    // 状态码200-299表示文件存在
+                    resolve(response.ok);
+                })
+                .catch(error => {
+                    console.error("HEAD请求失败:", error);
+                    reject(error);
+                });
+        });
+    }
+
+    // 页面加载时检查是否有内容可以下载
+    document.addEventListener('DOMContentLoaded', function() {
+        const tid = getUrlParam('tid');
+        if (tid) {
+            console.log('当前分类ID:', tid);
+        }
+    });
+
 </script>
 </body>
 </html>

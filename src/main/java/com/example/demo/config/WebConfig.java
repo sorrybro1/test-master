@@ -24,6 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/auth/login",      // 登录接口
                         "/api/auth/logout",     // 退出接口
                         "/api/auth/check",      // 检查登录状态接口
+                        "/api/file/download/**", // 文件下载接口（不需要登录）
                         "/css/**",              // 静态资源
                         "/js/**",
                         "/images/**",
