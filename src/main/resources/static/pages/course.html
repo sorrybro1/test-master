@@ -497,10 +497,10 @@
                     }
 
                     // 检查对应的文件路径字段
-                    var filePath = isScode ? data.scode : data.sdoll;
+                    var filePath = isScode ? data.scode : data.sdll;
 
                     if (!filePath || filePath.trim() === "") {
-                        console.log("数据库字段为空:", isScode ? "scode" : "sdoll");
+                        console.log("数据库字段为空:", isScode ? "scode" : "sdll");
                         resolve(false);
                         return;
                     }
@@ -522,13 +522,13 @@
         });
     }
 
-    // 可选：进一步检查服务器上文件是否存在
+    // 进一步检查服务器上文件是否存在
     function checkFileOnServer(contentId, isScode) {
         return new Promise((resolve, reject) => {
             // 发送HEAD请求检查文件是否存在（不下载文件内容）
             var url = isScode ?
                 API.downloadScode + "/" + contentId :
-                API.downloadSdoll + "/" + contentId;
+                API.downloadSdll + "/" + contentId;
 
             fetch(url, { method: 'HEAD' })
                 .then(response => {

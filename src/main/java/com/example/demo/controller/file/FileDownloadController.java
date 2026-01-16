@@ -39,9 +39,9 @@ public class FileDownloadController {
 
     /**
      * 下载程序运行文件
-     * URL: /api/file/download/sdoll/{contentId}
+     * URL: /api/file/download/sdll/{contentId}
      */
-    @GetMapping("/download/sdoll/{contentId}")
+    @GetMapping("/download/sdll/{contentId}")
     public ResponseEntity<Resource> downloadSdll(@PathVariable Integer contentId) {
         return downloadFile(contentId, false);
     }
