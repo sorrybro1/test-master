@@ -1,147 +1,384 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
     <title>用户管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+    <!-- 绝对路径：按你项目静态资源实际位置调整 -->
     <link rel="stylesheet" href="/js/bootstrap-3.3.7/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/js/bootstrap-table/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="/js/bootstrap-3.3.7/css/bootstrapValidator.min.css">
+    <link rel="stylesheet" href="/css/top.css">
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/foot.css">
 
     <style>
-        .main-container {
-            margin-top: 80px; /* 避开顶部固定导航栏 */
-            padding: 20px;
+        body { padding-top: 50px; }
+        ul.nav-tabs{
+            width: 100%;
+            margin-top: 0px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.067);
         }
-        .page-header {
-            border-bottom: 1px solid #eee;
-            margin-bottom: 20px;
+        ul.nav-tabs li{ margin: 0; border-top: 1px solid #ddd; }
+        ul.nav-tabs li:first-child{ border-top: none; }
+        ul.nav-tabs li a{ margin: 0; padding: 8px 16px; border-radius: 0; color: #333; }
+        ul.nav-tabs li.active a, ul.nav-tabs li.active a:hover{
+            color: #fff; background: #0088cc; border: 1px solid #0088cc;
         }
+        ul.nav-tabs li:first-child a{ border-radius: 4px 4px 0 0; }
+        ul.nav-tabs li:last-child a{ border-radius: 0 0 4px 4px; }
     </style>
 </head>
+
 <body>
 
-<div id="nav-placeholder"></div>
+<!-- 顶部导航（对齐 nav_per.jsp 的结构） -->
+<nav id="nav_id" class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <ul id="daohang" class="nav navbar-nav"></ul>
 
-<div class="container main-container">
-    <div class="page-header">
-        <h3>用户管理列表 <small id="sub-title"></small></h3>
+        <ul class="nav navbar-nav navbar-right" style="position:absolute; right:15px; top:0px;">
+            <li>
+                <!-- 关键：要 return 才能阻止默认跳转 -->
+                <a href="/login/loginout.do" onclick="return logoutAndRedirect()">
+                    <span class="glyphicon glyphicon-log-out"></span> 退出
+                </a>
+            </li>
+        </ul>
     </div>
+</nav>
 
-    <div id="toolbar" class="btn-group">
+<div id="per_content" class="content" style="padding-top:20px;">
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- 左侧栏：当前用户 + 管理菜单 -->
+            <div class="col-xs-2">
+                <ul class="nav nav-tabs nav-stacked">
+                    <li><div class="panel-heading" style="text-align:center;">当前用户</div></li>
+                    <li>
+                        <div class="panel-body">
+                            <table style="width:100%">
+                                <tr><td style="width:50%;text-align:right;">姓名：</td><td id="u_name"></td></tr>
+                                <tr><td style="width:50%;text-align:right;">编号：</td><td id="u_username"></td></tr>
+                                <tr><td style="width:50%;text-align:right;">部门：</td><td id="u_college"></td></tr>
+                            </table>
+                        </div>
+                    </li>
+                </ul>
+
+                <ul class="nav nav-tabs nav-stacked" style="text-align:center;">
+                    <li><div class="panel-heading">管理菜单</div></li>
+                    <li class="active"><a href="/user/userManagement.html">用户管理</a></li>
+                    <li><a href="/curriculum/courseManagement.do">课程管理</a></li>
+                    <li id="menu_create_course" style="display:none;">
+                        <a href="/ContentCtr/toStContent.do">创建课程</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 右侧：用户信息表单（来自 userManagement.jsp） -->
+            <div class="col-xs-10">
+                <div class="panel panel-default">
+                    <div class="panel-heading">用户管理</div>
+                    <div class="panel-body">
+
+                        <div class="card-body">
+                            <button onclick="updateUser()" class="btn btn-default" type="button" style="width:85px;">保存</button>
+                            <button onclick="changePassword()" class="btn btn-default" type="button" style="width:85px;">修改密码</button>
+                        </div>
+
+                        <div class="card-body" style="padding-top:15px;">
+                            <form id="frm" action="javascript:void(0);">
+                                <div class="input-group">
+                                    <span class="input-group-addon">用户名&#8195;&#160;</span>
+                                    <input id="username" name="username" type="text" class="form-control" readonly="readonly">
+                                </div>
+                                <br>
+
+                                <div class="input-group">
+                                    <span class="input-group-addon">姓名&#8195;&#8195;&#160;</span>
+                                    <input id="name" name="name" type="text" class="form-control">
+                                </div>
+                                <br>
+
+                                <div class="input-group">
+                                    <span class="input-group-addon">性别&#8195;&#8195;&#160;</span>
+                                    <select id="sex" name="sex" class="form-control">
+                                        <option value="1">男</option>
+                                        <option value="2">女</option>
+                                    </select>
+                                </div>
+                                <br>
+
+                                <div class="input-group">
+                                    <span class="input-group-addon">部门/学院</span>
+                                    <input id="college" name="college" type="text" class="form-control">
+                                </div>
+                                <br>
+
+                                <div class="input-group">
+                                    <span class="input-group-addon">专业/方向</span>
+                                    <input id="professional" name="professional" type="text" class="form-control">
+                                </div>
+                                <br>
+
+                                <div class="input-group" id="org_div">
+                                    <span class="input-group-addon">班级&#8195;&#8195;&#160;</span>
+                                    <input id="org_name" name="org_name" type="text" class="form-control" readonly="readonly">
+                                    <input id="org_id" name="org_id" type="hidden">
+                                </div>
+                                <br id="org_br">
+
+                                <div class="input-group">
+                                    <span class="input-group-addon">电话&#8195;&#8195;&#160;</span>
+                                    <input id="phone" name="phone" type="text" class="form-control">
+                                </div>
+                                <br>
+
+                                <input type="hidden" id="role">
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 修改密码弹窗 -->
+                <div class="modal fade bs-example-modal-lg" id="updateRes" role="dialog"
+                     aria-hidden="true" data-backdrop="static">
+                    <div class="modal-dialog modal-lg" style="max-width:500px;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">修改密码</h4>
+                            </div>
+                            <div class="modal-body" style="padding-left:25%;width:450px">
+                                <form id="upfm" style="font-size:16px">
+                                    <input type="text" id="userid" name="id" hidden value="">
+                                    <div class="form-group">
+                                        <label class="control-label">原始密码：</label>
+                                        <input type="password" id="e_passwd1" name="passwd1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label">&#8195;新密码：</label>
+                                        <input type="password" id="e_passwd" name="passwd2">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label">确认密码：</label>
+                                        <input type="password" id="e_repasswd">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer form-group">
+                                <span id="returnMessage" class="glyphicon"></span>
+                                <button type="button" onclick="closeRes()" class="btn btn-default">关闭</button>
+                                <button type="button" onclick="updateReson()" class="btn btn-primary">确定</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /col-xs-10 -->
+
+        </div>
     </div>
-
-    <table id="user-table"></table>
 </div>
-
-<div id="foot-placeholder"></div>
 
 <script src="/js/jquery.min.js"></script>
 <script src="/js/bootstrap-3.3.7/js/bootstrap.min.js"></script>
-<script src="/js/bootstrap-table/dist/bootstrap-table.min.js"></script>
-<script src="/js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script src="/js/bootstrap-3.3.7/js/bootstrapValidator.js"></script>
 
-<script type="text/javascript">
-    $(function () {
-        // 加载公共导航栏和页脚
-        $("#nav-placeholder").load("/common/nav.html");
-        $("#foot-placeholder").load("/common/foot.html");
+<script>
+    // 如果你项目有 context-path（例如 /demo），把 CTX 改成 '/demo'；没有就留空
+    const CTX = '';
 
-        // 获取 URL 传过来的 tid 参数
-        var tid = getQueryString("tid");
-        if(tid){
-            $("#sub-title").text("(当前分类ID: " + tid + ")");
-        }
+    function normalizeResponse(data){
+        if (data == null) return null;
+        if (typeof data === 'string') { try { return JSON.parse(data); } catch(e){ return data; } }
+        return data;
+    }
 
-        // 初始化表格
-        initTable(tid);
-    });
+    function escapeHtml(str){
+        return String(str)
+            .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+            .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+            .replace(/'/g,"&#39;");
+    }
 
-    function initTable(tid) {
-        $('#user-table').bootstrapTable({
-            url: '/user/list',       // 【重点】请求后端的接口
-            method: 'post',          // 请求方式
-            dataType: 'json',        // 预期服务器返回 JSON
-            contentType: "application/x-www-form-urlencoded", // 发送表单格式数据
+    function logoutAndRedirect(){
+        // 你原 JSP 是直接跳 /login/loginout.do，这里保持一致：返回 true 走 href
+        return true;
+    }
 
-            toolbar: '#toolbar',     // 工具按钮用哪个容器
-            striped: true,           // 是否显示行间隔色
-            cache: false,            // 是否使用缓存
-            pagination: true,        // 是否显示分页
-            sortable: true,          // 是否启用排序
-            sidePagination: "client",// 分页方式：client客户端分页，server服务端分页(看后端怎么写)
-            pageNumber: 1,           // 初始化加载第一页
-            pageSize: 10,            // 每页的记录行数
-            pageList: [10, 25, 50],  // 可供选择的每页的行数
-            search: true,            // 是否显示表格搜索
-            showColumns: true,       // 是否显示所有的列
-            showRefresh: true,       // 是否显示刷新按钮
+    function getNavigation(){
+        $.ajax({
+            type: "post",
+            url: CTX + "/classification/getNavigation.do",
+            cache:false,
+            async:true,
+            success:function(raw){
+                const data = normalizeResponse(raw);
 
-            // 【重点】发送给后端的参数
-            queryParams: function (params) {
-                return {
-                    tid: tid // 把 tid 传给后端进行筛选
-                };
+                // 兼容：后端直接返回 HTML 片段
+                if (typeof data === 'string') {
+                    $("#daohang").html(data);
+                    return;
+                }
+
+                // 兼容：数组 or {nav/data/list:[]}
+                let arr = [];
+                if (Array.isArray(data)) arr = data;
+                else if (data && Array.isArray(data.nav)) arr = data.nav;
+                else if (data && Array.isArray(data.data)) arr = data.data;
+                else if (data && Array.isArray(data.list)) arr = data.list;
+
+                let html = '';
+                html += '<li><a href="/pages/index.html">首页</a></li>';
+                arr.forEach(it=>{
+                    const id = it && it.id != null ? it.id : '';
+                    const name = it && it.name != null ? it.name : '';
+                    html += '<li><a href="/pages/course.html?tid=' + encodeURIComponent(id) + '">' + escapeHtml(name) + '</a></li>';
+                });
+                html += '<li class="active"><a href="/user/userManagement.html">个人中心</a></li>';
+                $("#daohang").html(html);
             },
-
-            // 【重点】列配置，field 必须对应 Java 实体类的属性名
-            columns: [{
-                checkbox: true
-            }, {
-                field: 'id',
-                title: '编号',
-                sortable: true
-            }, {
-                field: 'username',
-                title: '账号'
-            }, {
-                field: 'name',
-                title: '真实姓名'
-            }, {
-                field: 'sex',
-                title: '性别',
-                formatter: function(value, row, index) {
-                    // 如果数据库存的是 1/0，可以在这里转义
-                    return value;
-                }
-            }, {
-                field: 'phone',
-                title: '电话'
-            }, {
-                field: 'email',
-                title: '邮箱'
-            }, {
-                field: 'operate',
-                title: '操作',
-                align: 'center',
-                formatter: function(value, row, index) {
-                    // 动态生成操作按钮
-                    var result = "";
-                    result += '<a href="javascript:void(0)" onclick="editUser(\'' + row.id + '\')" title="编辑">编辑</a> ';
-                    result += '<a href="javascript:void(0)" onclick="delUser(\'' + row.id + '\')" title="删除" style="color:red">删除</a>';
-                    return result;
-                }
-            }]
+            error:function(){ console.log("导航栏数据获取失败"); }
         });
     }
 
-    // 工具函数：获取 URL 参数
-    function getQueryString(name) {
-        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
-        var r = window.location.search.substr(1).match(reg);
-        if (r != null) return unescape(r[2]); return null;
+    function getUser(){
+        $.ajax({
+            type:"post",
+            url: CTX + "/api/users/getUser",
+            cache:false,
+            async:true,
+            success:function(raw){
+                let res = normalizeResponse(raw);
+                let user = (res && res.user) ? res.user : res;
+                if (!user) { alert("获取用户失败：user为空"); return; }
+
+                // 左侧当前用户
+                $("#u_name").text(user.name || '');
+                $("#u_username").text(user.username || '');
+                $("#u_college").text(user.college || '');
+
+                // role==2 显示创建课程
+                if (String(user.role) === "2") $("#menu_create_course").show();
+                else $("#menu_create_course").hide();
+
+                // 右侧表单
+                $("#username").val(user.username || '');
+                $("#name").val(user.name || '');
+                $("#sex").val(user.sex || '1');
+                $("#college").val(user.college || '');
+                $("#role").val(user.role || '');
+
+                if (String(user.role) === "1") {
+                    $("#professional").val(user.professional || '');
+                    $("#org_id").val(user.org_id || '');
+                    $("#org_name").val(user.org_name || '');
+                    $("#org_div").show(); $("#org_br").show();
+                } else if (String(user.role) === "2") {
+                    $("#professional").val(user.prof || '');
+                    $("#org_div").hide(); $("#org_br").hide();
+                } else {
+                    $("#professional").val(user.professional || user.prof || '');
+                    $("#org_div").show(); $("#org_br").show();
+                }
+
+                $("#phone").val(user.phone || '');
+                if (user.id != null) $("#userid").val(user.id);
+            },
+            error:function(){ alert("获取数据失败"); }
+        });
     }
 
-    // 示例操作函数
-    function editUser(id) {
-        alert("点击了编辑，ID: " + id);
+    function changePassword(){ setTimeout(function(){ $('#updateRes').modal('show'); },100); }
+    function closeRes(){ setTimeout(function(){ $('#updateRes').modal('hide'); },100); document.getElementById("upfm").reset(); }
+
+    function updateReson(){
+        const pwd1=$("#e_passwd1").val();
+        const pwd=$("#e_passwd").val();
+        const repwd=$("#e_repasswd").val();
+        if(!pwd1){ alert("请输入原始密码！"); return; }
+        if(!pwd){ alert("请输入新密码！"); return; }
+        if(!repwd){ alert("请输入确认密码！"); return; }
+        if(pwd.length>16){ alert("密码不能大于16位！"); return; }
+        if(pwd.length<6){ alert("密码不能小于6位！"); return; }
+        if(pwd!==repwd){ alert("新密码和确认密码不一致！"); return; }
+
+        $.ajax({
+            type:"post",
+            url: CTX + "/api/users/updatePwd1.do?pwd1=" + encodeURIComponent(pwd1) + "&pwd=" + encodeURIComponent(pwd),
+            dataType:"json",
+            success:function(json){
+                if(json && json.success){
+                    setTimeout(function(){ $('#updateRes').modal('hide'); },100);
+                    window.location.href = CTX + "/login/loginout.do";
+                }else{
+                    alert("原始密码输入有误！");
+                }
+            },
+            error:function(){ alert("修改密码失败"); }
+        });
     }
-    function delUser(id) {
-        if(confirm("确定要删除吗？")) {
-            alert("执行删除逻辑，ID: " + id);
-        }
+
+    function updateUser(){
+        const bv = $("#frm").data('bootstrapValidator');
+        if(!bv){ alert("表单校验未初始化"); return; }
+        bv.validate();
+        if(!bv.isValid()) return;
+
+        const role = $("#role").val();
+        let professional = "", prof = "";
+        if(String(role)==="1") professional = $("#professional").val();
+        else if(String(role)==="2") prof = $("#professional").val();
+
+        $.ajax({
+            type: "post",
+            url: CTX + "/api/users/updateUser.do",
+            // 关键：用 data 对象，不要自己拼 querystring，更不要 encodeURI(encodeURI)
+            data: {
+                name: $("#name").val(),
+                sex: $("#sex").val(),
+                college: $("#college").val(),
+                professional: professional,
+                prof: prof,
+                phone: $("#phone").val()
+                // username/role 建议不要从前端传，后端用 session 的 userId 判定当前用户
+            },
+            // 可显式指定编码（通常不写也行）
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function(raw){
+                let res = normalizeResponse(raw);
+                if (typeof res === 'string') { try{ res=JSON.parse(res);}catch(e){} }
+                if(res && res.success===true){ alert("保存成功"); getUser(); }
+                else alert((res && res.msg) ? res.msg : "保存失败");
+            },
+            error: function(){ alert("保存失败"); }
+        });
     }
+
+
+    function initValidator(){
+        $('#frm').bootstrapValidator({
+            feedbackIcons: { valid:'glyphicon glyphicon-ok', invalid:'glyphicon glyphicon-remove', validating:'glyphicon glyphicon-refresh' },
+            fields: {
+                name: { validators:{ notEmpty:{message:'*姓名：不能为空'}, stringLength:{min:1,max:16,message:'*姓名：长度为1-16位'}, regexp:{regexp:/^[\u4E00-\u9FA5A-Za-z0-9]+$/,message:'*姓名：不能包含特殊字符'} } },
+                college: { validators:{ notEmpty:{message:'*部门/学院：不能为空'}, stringLength:{min:1,max:16,message:'*部门/学院：长度为1-16位'}, regexp:{regexp:/^[\u4E00-\u9FA5A-Za-z0-9]+$/,message:'*部门/学院：不能包含特殊字符'} } },
+                professional: { validators:{ notEmpty:{message:'*专业/方向：不能为空'}, stringLength:{min:1,max:16,message:'*专业/方向：长度为1-16位'}, regexp:{regexp:/^[\u4E00-\u9FA5A-Za-z0-9]+$/,message:'*专业/方向：不能包含特殊字符'} } },
+                phone: { validators:{ regexp:{regexp:/^1[3|5|8]{1}[0-9]{9}$/,message:'*电话：手机号码格式不正确'} } }
+            }
+        });
+    }
+
+    $(function(){
+        initValidator();
+        getNavigation();
+        getUser();
+    });
 </script>
+
 </body>
 </html>
