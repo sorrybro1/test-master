@@ -1,0 +1,211 @@
+<style>
+    #modal-body{
+        padding-left:35px;
+    }
+    .modal{
+        margin-top: 150px;
+    }
+    .navbar{
+        background-color:#272727;
+    }
+    .content{
+        flex: 30;
+    }
+    a:hover {
+        color: #82ACDB;
+    }
+    .btn-link:hover {
+        color: #82ACDB;
+    }
+</style>
+
+<nav class="navbar page-header">
+    <a href="#" class="btn btn-link sidebar-mobile-toggle d-md-none mr-auto">
+        <i class="fa fa-bars"></i>
+    </a>
+
+    <a class="navbar-brand" href="#" style="font-weight:bold;color:#fff;">
+        <!-- <img src="../resources/imgs/logo.png" alt="logo">  -->
+        <!-- 河南理工大学 -->
+        后台管理
+    </a>
+
+    <a href="#" class="btn btn-link sidebar-toggle d-md-down-none">
+        <i class="fa fa-bars"></i>
+    </a>
+
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fa fa-user"></i>
+                <span class="small ml-1 d-md-down-none" style="color:#fff;" id="LoginAccount">admin</span>
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-right">
+                <a href="#" class="dropdown-item" onclick="getUser()">
+                    <i class="fa fa-user"></i> 账户信息
+                </a>
+                <a href="#" class="dropdown-item" onclick="logoutAdmin()">
+                    <i class="fa fa-lock"></i> 退出
+                </a>
+            </div>
+        </li>
+    </ul>
+</nav>
+
+<div class="main-container">
+    <div class="sidebar">
+        <nav class="sidebar-nav">
+            <ul class="nav">
+                <!-- <li class="nav-title" style="font-size:.875rem;color:#fff;">管理菜单</li> -->
+
+                <li class="nav-item">
+                    <a href="/admin/index.html" class="nav-link active">
+                        <i class="icon icon-grid"></i> 用户管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/org.html" class="nav-link active">
+                        <i class="icon icon-grid"></i> 班级管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/stType.html" class="nav-link active">
+                        <i class="icon icon-puzzle"></i> 分类管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/stContent.html" class="nav-link active">
+                        <i class="icon icon-puzzle"></i> 内容管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/role.html" class="nav-link active">
+                        <i class="icon icon-puzzle"></i> 权限管理
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<div class="modal fade bs-example-modal-lg" id="updateRes" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    修改用户
+                </h4>
+            </div>
+            <div class="modal-body" style="padding-left:25%;width:450px">
+                <form id="upfm" style="font-size:16px">
+                    <input type="text" id="userid" name="id" hidden value="">
+                    <div class="form-group">
+                        <label for="name" class="control-label">用&nbsp;&nbsp;户&nbsp;&nbsp;名：</label>
+                        <span id="e_username" name="username"><span id="LoginAccountMirror">admin</span></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pwd" class="control-label">密&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;码：</label>
+                        <input type="password" id="e_passwd" name="passwd">
+                    </div>
+                    <div class="form-group">
+                        <label for="pwd" class="control-label">确认密码：</label>
+                        <input type="password" id="e_repasswd">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer form-group">
+                <span id="returnMessage" class="glyphicon"> </span>
+                <button type="button" onclick="closeRes()" class="btn btn-default">关闭</button>
+                <button type="button" onclick="updateReson()" name="signup" class="btn btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // 代替 JSP 的 ${pageContext.request.contextPath}
+    // 默认部署根路径：CTX=""
+    // 若未来设置了 context-path，比如 /xxx，则改成 CTX="/xxx"
+    const CTX = "";
+
+    // （可选）如果你后端提供 /admin-api/auth/check 返回用户名/uid，可在这里回填。
+    // 现在先保证页面不报错，默认显示 admin。
+    (function syncAccountToModal() {
+        const name = document.getElementById("LoginAccount")?.textContent || "admin";
+        const mirror = document.getElementById("LoginAccountMirror");
+        if (mirror) mirror.textContent = name;
+    })();
+
+    function logoutAdmin() {
+        // 你现在后端的后台退出接口是 /admin-api/auth/logout（我之前给你写的）
+        // 如果你还没接上，先保留这个调用；后面你补接口即可。
+        if (window.jQuery) {
+            $.post(CTX + "/admin-api/auth/logout", function () {
+                window.location.href = CTX + "/admin/adminlogin.html";
+            }).fail(function () {
+                // 兜底：接口失败也跳登录页
+                window.location.href = CTX + "/admin/adminlogin.html";
+            });
+        } else {
+            window.location.href = CTX + "/admin/adminlogin.html";
+        }
+    }
+
+    function getUser() {
+        setTimeout("$('#updateRes').modal('show')", 100);
+    }
+
+    function updateReson() {
+        var uid = $("#userid").val();
+        var pwd = $("#e_passwd").val();
+        var repwd = $("#e_repasswd").val();
+        var orgid1 = "";
+        if (pwd == null || pwd == "") {
+            setTimeout("$('#updateRes').modal('hide')", 100);
+            alert("密码未修改！");
+            return;
+        }
+        if (pwd != null || pwd != "") {
+            if (pwd.length > 16) {
+                alert("密码不能大于16位！");
+                return;
+            } else if (pwd.length < 6 && pwd.length > 0) {
+                alert("密码不能小于6位！");
+                return;
+            } else if (pwd != repwd) {
+                alert("两次密码不一致！");
+                return;
+            }
+        }
+        pwd = window.encodeURIComponent(encodeURI(pwd));
+        var data = "&uid=" + uid + "&passwd=" + pwd + "&orgid=" + orgid1;
+
+        // 原 JSP 是：
+        // url: "${pageContext.request.contextPath}/userCtrl/update_userInfo.do?"+data
+        // 这里保持接口路径不变，只替换成 CTX
+        $.ajax({
+            type: "post",
+            url: CTX + "/userCtrl/update_userInfo.do?" + data,
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function (res) {
+                alert(res.msg);
+                if (res.success == true) {
+                    // 原 JSP：退出后回登录
+                    window.location.href = CTX + "/admin/adminlogin.html";
+                }
+            },
+            error: function () {
+                alert("修改数据失败！");
+            }
+        });
+    };
+
+    function closeRes() {
+        setTimeout("$('#updateRes').modal('hide')", 100);
+        document.getElementById("upfm").reset();
+    };
+</script>
