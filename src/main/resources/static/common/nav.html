@@ -10,9 +10,9 @@
 </nav>
 
 <script type="text/javascript">
-    $(function () {
-        getNavigation();
-    });
+    // $(function () {
+    //     getNavigation();
+    // });
 
     // 退出函数
     function logoutAndRedirect() {
@@ -44,6 +44,7 @@
             success:function(data){
                 // data 是后端返回的 List<Classification>，格式如: [{id:1, name:"基础算法"}, ...]
                 var htmlContent = "";
+                window.__NAV_DATA__ = data || [];
 
                 // 1. 首页
                 htmlContent += '<li><a href="/pages/index.html">首页</a></li>';
@@ -62,6 +63,7 @@
 
                 // 渲染
                 $("#daohang").html(htmlContent);
+                $(document).trigger("nav:loaded", [window.__NAV_DATA__]);
             },
             error:function(){
                 console.log("导航栏数据获取失败");

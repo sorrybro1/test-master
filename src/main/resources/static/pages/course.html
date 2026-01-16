@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
 
     <link rel="stylesheet" href="../css/top.css">
+    <link rel="stylesheet" href="../css/index.css">
+
 
     <style>
         /* 页面主体样式调整，避免被导航栏遮挡 */
@@ -22,7 +24,7 @@
             height: calc(100vh - 80px);
             overflow-y: auto;
             padding-right: 0;
-            position: fixed; /* 固定侧边栏 */
+            position: sticky; /* 固定侧边栏 */
             top: 80px; /* 根据导航栏高度调整，JS会动态覆盖它 */
             bottom: 0;
         }
@@ -33,7 +35,7 @@
         /* 右侧内容区域，向右偏移以让出侧边栏位置 */
         .content-area {
             padding-left: 20px;
-            margin-left: 25%; /* 对应 col-sm-3 的宽度 */
+            margin-left: 0%; /* 对应 col-sm-3 的宽度 */
             margin-top: 20px;
         }
 
@@ -59,11 +61,36 @@
         }}
         .muted { color: #888; font-size: 0.9em; }
         .modal-content { border-radius: 6px; }
+        .hero-banner{
+            margin-top: 0;              /* 避开 fixed-top 导航（你可按实际导航高度改） */
+            padding: 60px 0;
+            color: #fff;
+            background: linear-gradient(90deg, #1a0b2e, #5c2b44);
+        }
+        .hero-banner h1{
+            margin: 0 0 15px 0;
+            font-size: 56px;
+            font-weight: 700;
+        }
+        .hero-banner p{
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.9;
+            opacity: .95;
+        }
+
     </style>
 </head>
 
 <body>
 <div id="nav-placeholder"></div>
+
+<div class="hero-banner">
+    <div class="container">
+        <h1 id="heroTitle">编码与密码分析</h1>
+        <p id="heroDesc">编码是将信息按照一定规则转换为特定格式，便于存储和传输；密码分析是研究密码系统的弱点……</p>
+    </div>
+</div>
 
 <div class="container-fluid">
     <div class="row">
@@ -258,6 +285,34 @@
         if (r != null) return decodeURIComponent(r[2]);
         return null;
     }
+
+
+    // 根据 tid 渲染紫色区域
+    function renderHeroByTid(navData) {
+        var tid = getQueryString("tid");
+        if (!tid || !navData || navData.length === 0) return;
+
+        // 找到当前分类
+        var cur = null;
+        for (var i = 0; i < navData.length; i++) {
+            if (String(navData[i].id) === String(tid)) { cur = navData[i]; break; }
+        }
+        if (!cur) return;
+
+        // 你需要保证页面上有这两个元素
+        $("#heroTitle").text(cur.name || "");
+
+        // 紫色区域的描述字段名你要按后端返回实际字段改一下：
+        // 可能是 cur.intro / cur.detail / cur.description / cur.content 等
+        $("#heroDesc").html(cur.intro || cur.detail || cur.desc || "");
+    }
+
+    // 监听 nav 数据就绪事件
+    $(document).on("nav:loaded", function(e, navData){
+        renderHeroByTid(navData);
+    });
+
+
 
     function normalizeHtml(v) {
         if (v === undefined || v === null) return "";
