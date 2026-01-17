@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>后台管理</title>
+
+    <!-- 保持原来的相对路径引用（你放到 static/admin/ 下时，可能需要调整路径） -->
+    <link rel="stylesheet" href="../vendor/simple-line-icons/css/simple-line-icons.css">
+    <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+
+    <style type="text/css">
+        .col-6 { align: center; }
+    </style>
+
+    <script type="text/javascript">
+        // 后端如果部署在根路径(默认)，CTX 为空字符串即可
+        // 如果部署在 /xxx 这样的 context-path 下，把 CTX 改成 "/xxx"
+        const CTX = "";
+
+        // 回车事件
+        document.addEventListener("keydown", function (e) {
+            if (e.keyCode === 13) {
+                const adminName = document.getElementById("adminName").value;
+                const password = document.getElementById("password").value;
+                if (adminName !== "" && password !== "") {
+                    loginName();
+                }
+            }
+        });
+
+        function loginName() {
+            const adminName = encodeURIComponent(document.getElementById("adminName").value);
+            const password = encodeURIComponent(document.getElementById("password").value);
+
+            // 注意：$.ajax 依赖 jQuery，jQuery 在页面底部引入即可（点击按钮后才会执行，不影响）
+            $.ajax({
+                type: "post",
+                url: `/admin-api/auth/login`,
+                contentType: "application/json;charset=UTF-8",
+                dataType: "json",
+                data: JSON.stringify({ username: adminName, password: password }),
+                success: function (json) {
+                    if (json && json.success) {
+                        window.location.href = `/admin/index.html`; // 后台登录成功后跳这里
+                    } else {
+                        alert(json && json.message ? json.message : "登录失败");
+                    }
+                },
+                error: function (xhr) {
+                    alert("请求失败：" + (xhr.responseText || xhr.status));
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+<div class="page-wrapper flex-row align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card p-4">
+                    <div class="card-header text-center text-uppercase h4 font-weight-light">
+                        <h2>后台管理</h2>
+                    </div>
+
+                    <div class="card-body py-5">
+                        <div class="form-group">
+                            <label class="form-control-label">用户名</label>
+                            <input type="text" class="form-control" name="adminName" id="adminName">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-control-label">密码</label>
+                            <input type="password" class="form-control" name="password" id="password">
+                        </div>
+
+                        <br><br>
+
+                        <div class="form-group" align="center">
+                            <button type="button" class="btn btn-primary px-5" onclick="loginName()">登录</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/popper.js/popper.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="../vendor/chart.js/chart.min.js"></script>
+<script src="../js/carbon.js"></script>
+<script src="../js/demo.js"></script>
+</body>
+</html>

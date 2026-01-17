@@ -9,6 +9,12 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class LoginInterceptor implements HandlerInterceptor {
 
+    private boolean isStatic(String path) {
+        return path.startsWith("/resources/")
+                || path.startsWith("/static/")
+                || path.matches(".*\\.(css|js|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|svg)$");
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         HttpSession session = request.getSession(false); // 获取现有session，不创建新的
@@ -20,30 +26,20 @@ public class LoginInterceptor implements HandlerInterceptor {
         // 移除上下文路径，获取相对路径
         String path = uri.substring(contextPath.length());
 
-        // 放行登录页面和登录相关接口
-        if (path.equals("/") ||
-                path.equals("/pages/login.html") ||
-                //path.equals("/pages/index.html") || // 如果是直接访问首页，也放行（前端会检查登录状态）
-                path.startsWith("/api/auth/login") ||
-                path.startsWith("/api/auth/logout") ||
-                path.startsWith("/api/auth/check")) {
+        String path2 = request.getRequestURI();
+
+        // ✅ 静态资源放行
+        if (isStatic(path2)) {
             return true;
         }
 
-        // 放行静态资源
-        if (path.startsWith("/css/") ||
-                path.startsWith("/js/") ||
-                path.startsWith("/images/") ||
-                path.startsWith("/fonts/") ||
-                path.startsWith("/favicon.ico") ||
-                path.endsWith(".css") ||
-                path.endsWith(".js") ||
-                path.endsWith(".png") ||
-                path.endsWith(".jpg") ||
-                path.endsWith(".jpeg") ||
-                path.endsWith(".gif") ||
-                path.endsWith(".ico") ||
-                path.startsWith("/error")) {
+        // 放行登录页面和登录相关接口
+        if (path.equals("/") ||
+                path.equals("/pages/login.html") ||
+                path.equals("/admin/adminlogin.html") ||
+                path.startsWith("/api/auth/login") ||
+                path.startsWith("/api/auth/logout") ||
+                path.startsWith("/api/auth/check")) {
             return true;
         }
 
