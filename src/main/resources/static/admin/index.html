@@ -101,20 +101,38 @@
 <script src="../vendor/chart.js/chart.min.js"></script>
 <script src="../js/carbon.js"></script>
 <script src="../js/demo.js"></script>
+<script src="../js/admin-common.js"></script>
 
 <script type="text/javascript">
+    // 代替 JSP 的 ${pageContext.request.contextPath}
 
-    // ✅ 代替 JSP 的 ${pageContext.request.contextPath}
-    // 默认部署在根路径：CTX = ""
-    // 如果你设置了 server.servlet.context-path=/xxx，则改为 CTX="/xxx"
-    const CTX = "";
-
-    // ✅（可选）后续你把 publicMenu.jsp 改成 publicMenu.html 后，就能自动加载菜单
-    // 不会影响你现有页面；加载失败也不会报错
+    // 后续把 publicMenu.jsp 改成 publicMenu.html 后，就能自动加载菜单
+    // 不会影响现有页面；加载失败也不会报错
+    // 替换原来的 loadPublicMenu 函数
     (function loadPublicMenu() {
         fetch("./publicMenu.html")
             .then(r => r.ok ? r.text() : "")
-            .then(html => { if (html) document.getElementById("publicMenu").innerHTML = html; })
+            .then(html => {
+                if (!html) return;
+
+                const container = document.getElementById("publicMenu");
+
+                // 分离 HTML 和 Script
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+
+                // 插入 HTML 部分
+                const scripts = tempDiv.querySelectorAll('script');
+                container.innerHTML = tempDiv.innerHTML;
+
+                // 手动执行 script 标签
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = oldScript.textContent;
+                    if (oldScript.src) newScript.src = oldScript.src;
+                    document.body.appendChild(newScript);
+                });
+            })
             .catch(() => {});
     })();
 
