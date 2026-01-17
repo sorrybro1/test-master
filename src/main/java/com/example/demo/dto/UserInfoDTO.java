@@ -13,7 +13,8 @@ public class UserInfoDTO {
     private String roleName;
     private String sex;
     private String college;
-    private String profession;
+    private String professional;
+    private String prof;
     private String phone;
     private String userClass;
 

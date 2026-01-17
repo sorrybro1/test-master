@@ -73,7 +73,8 @@ public class AuthController {
         dto.setRoleName(user.getRoleName());
         dto.setSex(user.getSex());
         dto.setCollege(user.getCollege());
-        dto.setProfession(user.getProf());
+        dto.setProfessional(user.getProfessional());
+        dto.setProf(user.getProf());
         dto.setPhone(user.getPhone());
         dto.setUserClass(user.getU_class());
 
@@ -111,7 +112,7 @@ public class AuthController {
             dto.setRoleName(user.getRoleName());
             dto.setSex(user.getSex());
             dto.setCollege(user.getCollege());
-            dto.setProfession(user.getProf());
+            dto.setProfessional(user.getProf());
             dto.setPhone(user.getPhone());
             dto.setUserClass(user.getU_class());
 
