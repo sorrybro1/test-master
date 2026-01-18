@@ -34,12 +34,19 @@ public class AdminLoginInterceptor implements HandlerInterceptor {
         String ctx = request.getContextPath();
         String path = uri.substring(ctx.length());
 
-        //  静态资源直接放行
+        //  给所有后台页面添加禁止缓存的响应头
+        if (path.startsWith("/admin/") && !path.equals("/admin/adminlogin.html")) {
+            response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            response.setHeader("Pragma", "no-cache");
+            response.setDateHeader("Expires", 0);
+        }
+
+        // 静态资源直接放行
         if (isStatic(path)) {
             return true;
         }
 
-        //  放行后台登录页 & 登录接口
+        // 放行后台登录页 & 登录接口
         if (path.equals("/admin/adminlogin.html")
                 || path.startsWith("/admin-api/auth/login")
                 || path.startsWith("/admin-api/auth/logout")
@@ -47,7 +54,6 @@ public class AdminLoginInterceptor implements HandlerInterceptor {
                 || path.startsWith("/resources/**")) {
             return true;
         }
-
 
         HttpSession session = request.getSession(false);
         if (session == null) {
@@ -76,4 +82,3 @@ public class AdminLoginInterceptor implements HandlerInterceptor {
         return true;
     }
 }
-
