@@ -42,7 +42,7 @@
         <ul class="nav navbar-nav navbar-right" style="position:absolute; right:15px; top:0px;">
             <li>
                 <!-- 关键：要 return 才能阻止默认跳转 -->
-                <a href="/login/loginout.do" onclick="return logoutAndRedirect()">
+                <a href="/api/auth/logout" onclick="return logoutAndRedirect()">
                     <span class="glyphicon glyphicon-log-out"></span> 退出
                 </a>
             </li>
@@ -207,7 +207,6 @@
     }
 
     function logoutAndRedirect(){
-        // 你原 JSP 是直接跳 /login/loginout.do，这里保持一致：返回 true 走 href
         return true;
     }
 
@@ -315,7 +314,19 @@
             success:function(json){
                 if(json && json.success){
                     setTimeout(function(){ $('#updateRes').modal('hide'); },100);
-                    window.location.href = CTX + "/login/loginout.do";
+                    alert("密码修改成功，请点击确定重新登录！");
+                    $.ajax({
+                        type: "post", // 通常支持 GET，如果你的后端强制 POST 请改为 POST
+                        url: CTX + "/api/auth/logout",
+                        cache: false,
+                        // 使用 complete 而不是 success，确保无论注销接口返回什么（哪怕是重定向 HTML），
+                        // 前端都会坚定地执行跳转到 login.html
+                        complete: function() {
+                            // 3. 注销动作完成后，前端手动跳转到登录页
+                            window.location.href = CTX + "/pages/login.html";
+                        }
+                    },200);
+
                 }else{
                     alert("原始密码输入有误！");
                 }

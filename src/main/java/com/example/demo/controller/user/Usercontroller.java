@@ -171,7 +171,9 @@ public class Usercontroller {
         }
 
         // 你库里的 passwd 很像 MD5 大写十六进制，这里按 MD5(UTF-8).toUpperCase() 写
-        String oldHash = md5Upper(oldPwd);
+        //如果要密码要加密 改这里
+        //String oldHash = md5Upper(oldPwd);
+        String oldHash = oldPwd;
         if (user.getPasswd() == null || !user.getPasswd().equalsIgnoreCase(oldHash)) {
             return resp(false, "原始密码错误", null);
         }
@@ -180,7 +182,9 @@ public class Usercontroller {
             return resp(false, "新密码长度应为6-16位", null);
         }
 
-        user.setPasswd(md5Upper(newPwd));
+        //如果要密码要加密 改这里
+        //user.setPasswd(md5Upper(newPwd));
+        user.setPasswd(newPwd);
         int rows = userMapper.updateById(user);
         if (rows > 0) {
             return resp(true, "修改成功", null);
