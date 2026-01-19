@@ -1,11 +1,13 @@
 package com.example.demo.controller.Auth;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.LoginResponse;
 import com.example.demo.dto.UserInfoDTO;
 import com.example.demo.entity.User;
 import com.example.demo.mapper.UserMapper;
+import com.example.demo.util.PasswordUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -22,12 +24,14 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request, HttpSession session) {
 
-        // 第一步：根据用户名查询用户是否存在
-        List<User> users = userMapper.selectList(new LambdaQueryWrapper<User>()
-                .eq(User::getUsername, request.getUsername())
-        );
+        String username = request.getUsername();
+        String rawPassword = request.getPassword();
+        Integer role = request.getRole();
 
-        // 用户不存在
+        // 1) 先查是否存在
+        List<User> users = userMapper.selectList(
+                new LambdaQueryWrapper<User>().eq(User::getUsername, username)
+        );
         if (users.isEmpty()) {
             return LoginResponse.builder()
                     .success(false)
@@ -35,35 +39,48 @@ public class AuthController {
                     .build();
         }
 
-        // 第二步：验证密码和角色
-        List<User> matchedUsers = userMapper.selectList(new LambdaQueryWrapper<User>()
-                .eq(User::getUsername, request.getUsername())
-                .eq(User::getPasswd, request.getPassword())
-                .eq(User::getRole, request.getRole())
+        // 2) 按 username + role 找用户（不要再用 passwd 作为查询条件）
+        List<User> candidates = userMapper.selectList(
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getUsername, username)
+                        .eq(User::getRole, role)
         );
-
-        // 密码或角色不正确
-        if (matchedUsers.isEmpty()) {
+        if (candidates.isEmpty()) {
             return LoginResponse.builder()
                     .success(false)
                     .message("密码不正确，请重新输入！")
                     .build();
         }
 
-        // 登录成功
-        User user = matchedUsers.get(0);
+        User user = candidates.get(0);
 
-        // 将用户信息存入Session
+        // 3) 校验密码：统一 MD5（兼容旧明文）
+        if (!PasswordUtil.matchesStored(user.getPasswd(), rawPassword)) {
+            return LoginResponse.builder()
+                    .success(false)
+                    .message("密码不正确，请重新输入！")
+                    .build();
+        }
+
+        // 4) 如果库里还是明文，登录成功后自动升级成 MD5 hash
+        String desiredHash = PasswordUtil.md5Upper(rawPassword);
+        if (user.getPasswd() != null && user.getPasswd().equals(rawPassword)) {
+            userMapper.update(null,
+                    new LambdaUpdateWrapper<User>()
+                            .eq(User::getId, user.getId())
+                            .set(User::getPasswd, desiredHash)
+            );
+            user.setPasswd(desiredHash);
+        }
+
+        // 5) Session 登录态
         session.setAttribute("user", user);
         session.setAttribute("isLogin", true);
         session.setAttribute("userId", user.getId());
         session.setAttribute("username", user.getUsername());
         session.setAttribute("role", user.getRole());
-
-        // 设置Session超时时间（30分钟）
         session.setMaxInactiveInterval(30 * 60);
 
-        // 组装返回信息
         UserInfoDTO dto = new UserInfoDTO();
         dto.setId(user.getId());
         dto.setUid(user.getUid());
@@ -86,23 +103,18 @@ public class AuthController {
                 .build();
     }
 
-    // 添加退出登录接口
     @PostMapping("/logout")
     public LoginResponse logout(HttpSession session) {
-        session.invalidate(); // 清除所有Session
-        return LoginResponse.builder()
-                .success(true)
-                .message("退出登录成功")
-                .build();
+        session.invalidate();
+        return LoginResponse.builder().success(true).message("退出登录成功").build();
     }
 
-    // 添加检查登录状态的接口
     @GetMapping("/check")
     public LoginResponse checkLogin(HttpSession session) {
         Object isLogin = session.getAttribute("isLogin");
         if (isLogin != null && (Boolean) isLogin) {
             User user = (User) session.getAttribute("user");
-            // 组装用户信息
+
             UserInfoDTO dto = new UserInfoDTO();
             dto.setId(user.getId());
             dto.setUid(user.getUid());
@@ -116,16 +128,8 @@ public class AuthController {
             dto.setPhone(user.getPhone());
             dto.setUserClass(user.getU_class());
 
-            return LoginResponse.builder()
-                    .success(true)
-                    .message("用户已登录")
-                    .userInfo(dto)
-                    .build();
+            return LoginResponse.builder().success(true).message("用户已登录").userInfo(dto).build();
         }
-
-        return LoginResponse.builder()
-                .success(false)
-                .message("用户未登录")
-                .build();
+        return LoginResponse.builder().success(false).message("用户未登录").build();
     }
 }
