@@ -13,7 +13,7 @@
     <link href="../js/bootstrap-tree/css/bootstrapStyle/bootstrapStyle.css" type="text/css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.css">
     <!-- zTree -->
-    <link href="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/css/zTreeStyle/zTreeStyle.min.css" rel="stylesheet">
+<!--    <link href="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/css/zTreeStyle/zTreeStyle.min.css" rel="stylesheet">-->
 </head>
 
 <body class="sidebar-fixed header-fixed">
@@ -307,9 +307,9 @@
 <script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.exedit.js"></script>
 <script type="text/javascript" src="../js/jquery-ui.min.js"></script>
 <!-- zTree -->
-<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.core.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.excheck.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.exedit.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.core.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.excheck.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.exedit.min.js"></script>-->
 <script src="../js/admin-common.js"></script>
 
 <script type="text/javascript">
@@ -394,22 +394,37 @@
 
     // 查询功能
     $("#orgsel_open").click(function() {
-        $('#mytab').bootstrapTable('refresh', {pageNumber: 1});
+        get_tree2();
+        var zTreeObj2 = $.fn.zTree.init($("#sea_tree"), setting2, zNodes2);
+        zTreeObj2.expandAll(true);
+        $('#searchTree').modal('show');
     });
 
     function search() {
-        var org_id = $("#org_id2").val();
-        var username = $("#susername").val();
-        username = window.encodeURIComponent(encodeURI(username));
-        var e_type = $("#type_search option:selected").attr("data-role");
-        if (e_type == "9") {
-            e_type = "";
-        }
-        var data = "&orgid=" + org_id + "&role=" + e_type + "&username=" + username;
-        $('#mytab').bootstrapTable('refresh', {
-            url: CTX + "/userCtrl/get_user_info.do?" + data
-        });
+        $('#mytab').bootstrapTable('refresh', {pageNumber: 1});
     }
+    $('#mytab').bootstrapTable('refresh', {
+        url: CTX + "/admin-api/users/page",
+        method: "post",
+        contentType: "application/x-www-form-urlencoded",
+        sidePagination: "server",
+
+        queryParams: function (params) {
+            var orgid = $("#org_id2").val();
+            var username = $("#susername").val();
+            var e_type = $("#type_search option:selected").attr("data-role");
+            if (e_type == "9") e_type = "";
+
+            return {
+                limit: params.limit,
+                offset: params.offset,
+                orgId: orgid,          // 注意：是 orgId
+                role: e_type,
+                username: username     // 不需要手动 encode，jQuery 会处理
+            };
+        },
+
+    });
 
     function resetSearch() {
         window.location.href = CTX + "/admin/userInfo.html";
@@ -765,7 +780,10 @@
         },
         data: {
             simpleData: {
-                enable: true
+                enable: true,
+                idKey: "id",
+                pIdKey: "pId",
+                rootPId: "0"
             }
         },
         edit: {
@@ -780,23 +798,29 @@
     function get_tree() {
         $.ajax({
             type: "post",
-            url: CTX + "/orgCtrl/getOrgInfo.do",
+            url: CTX + "/admin-api/orgs/tree",
             cache: false,
             async: false,
             dataType: 'json',
             success: function(res) {
                 zNodes = res.tree;
             },
-            error: function() {
+            error: function(xhr) {
+                if (xhr.status === 401) {
+                    // 会话失效，跳回登录
+                    window.location.href = "/admin/adminlogin.html";
+                    return;
+                }
                 alert("班级查询失败！");
             }
         });
     }
 
-    $(document).ready(function() {
-        get_tree();
-        $.fn.zTree.init($("#add_tree"), setting, zNodes);
-    });
+    // $(document).ready(function() {
+    //     get_tree();
+    //     $.fn.zTree.init($("#add_tree"), setting, zNodes);
+    //     zTreeObj.expandAll(true);
+    // });
 
     function onCheck(e, treeId, treeNode) {
         var zTree = $.fn.zTree.getZTreeObj("add_tree").getNodesByFilter(filter);
@@ -842,7 +866,10 @@
         },
         data: {
             simpleData: {
-                enable: true
+                enable: true,
+                idKey: "id",
+                pIdKey: "pId",
+                rootPId: "0"
             }
         },
         edit: {
@@ -857,23 +884,29 @@
     function get_tree1() {
         $.ajax({
             type: "post",
-            url: CTX + "/orgCtrl/getOrgInfo.do",
+            url: CTX + "/admin-api/orgs/tree",
             cache: false,
             async: false,
             dataType: 'json',
             success: function(res) {
                 zNodes1 = res.tree;
             },
-            error: function() {
-                alert("班级分类查询失败！");
+            error: function(xhr) {
+                if (xhr.status === 401) {
+                    // 会话失效，跳回登录
+                    window.location.href = "/admin/adminlogin.html";
+                    return;
+                }
+                alert("班级查询失败！");
             }
         });
     }
 
-    $(document).ready(function() {
-        get_tree1();
-        $.fn.zTree.init($("#update_tree"), setting1, zNodes1);
-    });
+    // $(document).ready(function() {
+    //     get_tree1();
+    //     $.fn.zTree.init($("#update_tree"), setting1, zNodes1);
+    //     zTreeObj.expandAll(true);
+    // });
 
     function onCheck1(e, treeId, treeNode) {
         var zTree = $.fn.zTree.getZTreeObj("update_tree").getNodesByFilter(filter);
@@ -917,7 +950,10 @@
         },
         data: {
             simpleData: {
-                enable: true
+                enable: true,
+                idKey: "id",
+                pIdKey: "pId",
+                rootPId: "0"
             }
         },
         edit: {
@@ -932,23 +968,29 @@
     function get_tree2() {
         $.ajax({
             type: "post",
-            url: CTX + "/orgCtrl/getOrgInfo.do",
+            url: CTX + "/admin-api/orgs/tree",
             cache: false,
             async: false,
             dataType: 'json',
             success: function(res) {
                 zNodes2 = res.tree;
             },
-            error: function() {
+            error: function(xhr) {
+                if (xhr.status === 401) {
+                    // 会话失效，跳回登录
+                    window.location.href = "/admin/adminlogin.html";
+                    return;
+                }
                 alert("班级查询失败！");
             }
         });
     }
 
-    $(document).ready(function() {
-        get_tree2();
-        $.fn.zTree.init($("#sea_tree"), setting2, zNodes2);
-    });
+    // $(document).ready(function() {
+    //     get_tree2();
+    //     $.fn.zTree.init($("#sea_tree"), setting2, zNodes2);
+    //     zTreeObj.expandAll(true);
+    // });
 
     function onCheck2(e, treeId, treeNode) {
         var zTree = $.fn.zTree.getZTreeObj("sea_tree").getNodesByFilter(filter);

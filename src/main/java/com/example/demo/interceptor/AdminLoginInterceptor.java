@@ -57,7 +57,14 @@ public class AdminLoginInterceptor implements HandlerInterceptor {
 
         HttpSession session = request.getSession(false);
         if (session == null) {
-            response.sendRedirect(ctx + "/admin/adminlogin.html");
+            // 接口：返回 401 JSON（不要 302）
+            if (path.startsWith("/admin-api/")) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"success\":false,\"message\":\"管理员未登录\"}");
+            } else {
+                response.sendRedirect(ctx + "/admin/adminlogin.html");
+            }
             return false;
         }
 

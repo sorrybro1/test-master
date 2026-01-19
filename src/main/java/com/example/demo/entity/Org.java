@@ -8,6 +8,6 @@ import lombok.Data;
 public class Org {
     private String id;
     private String name;
-    private String pld;
+    private String pId;
     private String uid;
 }
