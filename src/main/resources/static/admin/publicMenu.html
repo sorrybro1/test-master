@@ -19,14 +19,14 @@
     }
 </style>
 
+<script src="../js/admin-common.js"></script>
+
 <nav class="navbar page-header">
     <a href="#" class="btn btn-link sidebar-mobile-toggle d-md-none mr-auto">
         <i class="fa fa-bars"></i>
     </a>
 
     <a class="navbar-brand" href="#" style="font-weight:bold;color:#fff;">
-        <!-- <img src="../resources/imgs/logo.png" alt="logo">  -->
-        <!-- 河南理工大学 -->
         后台管理
     </a>
 
@@ -45,7 +45,7 @@
                 <a href="#" class="dropdown-item" onclick="getUser()">
                     <i class="fa fa-user"></i> 账户信息
                 </a>
-                <a href="/admin-api/auth/logout" class="dropdown-item" onclick="logoutAdmin()">
+                <a href="javascript:void(0);" class="dropdown-item" onclick="logoutAdmin(event)">
                     <i class="fa fa-lock"></i> 退出
                 </a>
             </div>
@@ -57,10 +57,8 @@
     <div class="sidebar">
         <nav class="sidebar-nav">
             <ul class="nav">
-                <!-- <li class="nav-title" style="font-size:.875rem;color:#fff;">管理菜单</li> -->
-
                 <li class="nav-item">
-                    <a href="/admin/index.html" class="nav-link active">
+                    <a href="/admin/userInfo.html" class="nav-link active">
                         <i class="icon icon-grid"></i> 用户管理
                     </a>
                 </li>
@@ -123,89 +121,3 @@
         </div>
     </div>
 </div>
-
-<script type="text/javascript">
-    // 代替 JSP 的 ${pageContext.request.contextPath}
-    // 默认部署根路径：CTX=""
-    // 若未来设置了 context-path，比如 /xxx，则改成 CTX="/xxx"
-    const CTX = "";
-
-    // （可选）如果你后端提供 /admin-api/auth/check 返回用户名/uid，可在这里回填。
-    // 现在先保证页面不报错，默认显示 admin。
-    (function syncAccountToModal() {
-        const name = document.getElementById("LoginAccount")?.textContent || "admin";
-        const mirror = document.getElementById("LoginAccountMirror");
-        if (mirror) mirror.textContent = name;
-    })();
-
-    function logoutAdmin() {
-        // 你现在后端的后台退出接口是 /admin-api/auth/logout（我之前给你写的）
-        // 如果你还没接上，先保留这个调用；后面你补接口即可。
-        if (window.jQuery) {
-            $.post(CTX + "/admin-api/auth/logout", function () {
-                window.location.href = CTX + "/admin/adminlogin.html";
-            }).fail(function () {
-                // 兜底：接口失败也跳登录页
-                window.location.href = CTX + "/admin/adminlogin.html";
-            });
-        } else {
-            window.location.href = CTX + "/admin/adminlogin.html";
-        }
-    }
-
-    function getUser() {
-        setTimeout("$('#updateRes').modal('show')", 100);
-    }
-
-    function updateReson() {
-        var uid = $("#userid").val();
-        var pwd = $("#e_passwd").val();
-        var repwd = $("#e_repasswd").val();
-        var orgid1 = "";
-        if (pwd == null || pwd == "") {
-            setTimeout("$('#updateRes').modal('hide')", 100);
-            alert("密码未修改！");
-            return;
-        }
-        if (pwd != null || pwd != "") {
-            if (pwd.length > 16) {
-                alert("密码不能大于16位！");
-                return;
-            } else if (pwd.length < 6 && pwd.length > 0) {
-                alert("密码不能小于6位！");
-                return;
-            } else if (pwd != repwd) {
-                alert("两次密码不一致！");
-                return;
-            }
-        }
-        pwd = window.encodeURIComponent(encodeURI(pwd));
-        var data = "&uid=" + uid + "&passwd=" + pwd + "&orgid=" + orgid1;
-
-        // 原 JSP 是：
-        // url: "${pageContext.request.contextPath}/userCtrl/update_userInfo.do?"+data
-        // 这里保持接口路径不变，只替换成 CTX
-        $.ajax({
-            type: "post",
-            url: CTX + "/userCtrl/update_userInfo.do?" + data,
-            cache: false,
-            async: false,
-            dataType: 'json',
-            success: function (res) {
-                alert(res.msg);
-                if (res.success == true) {
-                    // 原 JSP：退出后回登录
-                    window.location.href = CTX + "/admin/adminlogin.html";
-                }
-            },
-            error: function () {
-                alert("修改数据失败！");
-            }
-        });
-    };
-
-    function closeRes() {
-        setTimeout("$('#updateRes').modal('hide')", 100);
-        document.getElementById("upfm").reset();
-    };
-</script>

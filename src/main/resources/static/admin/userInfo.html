@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>用户管理</title>
+    <link rel="stylesheet" href="../vendor/simple-line-icons/css/simple-line-icons.css">
+    <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="../js/bootstrap-table/dist/bootstrap-table.min.css" rel="stylesheet">
+    <!-- Bootstrap Table -->
+    <link href="../js/bootstrap-tree/css/bootstrapStyle/bootstrapStyle.css" type="text/css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.css">
+    <!-- zTree -->
+    <link href="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/css/zTreeStyle/zTreeStyle.min.css" rel="stylesheet">
+</head>
+
+<body class="sidebar-fixed header-fixed">
+<div class="page-wrapper" style="height: 100%;">
+    <!-- 公共菜单 -->
+    <div id="publicMenu"></div>
+
+    <div class="content" style="height: 100%;">
+        <div class="container-fluid" style="height: 100%;">
+            <!-- 操作按钮 -->
+            <div class="row" style="margin-left:0">
+                <div class="col-md-12">
+                    <button class="btn btn-success" onclick="add_User()">新建用户</button>
+                    <button class="btn btn-danger btn-space" onclick="deleteUserInfo()">删除用户</button>
+                    <button class="btn btn-primary btn-space" onclick="expStyle()">下载导入模板</button>
+                    <button class="btn btn-primary btn-space" data-toggle="modal" data-target="#excel_modal">导入用户</button>
+                    <button class="btn btn-info btn-space" onclick="initPwd()">初始化密码</button>
+                </div>
+            </div>
+
+            <!-- 查询和表格 -->
+            <div class="row" style="height: 90%;">
+                <div class="col-md-12" style="height: 100%;">
+                    <div class="card-body" style="height: 100%;">
+                        <!-- 查询表单 -->
+                        <div class="pull-right" id="query-form" style="padding-bottom:10px;float: left;">
+                            <div class="btn-group">
+                                <input id="susername" placeholder='用户名' type="text"
+                                       style="float:left;width:130px;margin-right:5px;"
+                                       class="form-control">
+                            </div>
+                            <div class="btn-group">
+                                <select id="type_search" name="role" class="form-control"
+                                        style="float:left;height:38px; width:130px;margin-right:5px;">
+                                    <option value="9" selected="selected" data-role="9">全部</option>
+                                    <option value="3" data-role="3">管理员</option>
+                                    <option value="2" data-role="2">教师</option>
+                                    <option value="1" data-role="1">学生</option>
+                                </select>
+                            </div>
+                            <div class="btn-group">
+                                <button id="orgsel_open" data-toggle="modal" type="button" class="btn btn-primary btn-space">
+                                    <span class="fa fa-search"></span> 班级
+                                </button>
+                                <input id="org_id2" name="orgid" type="hidden">
+                                <input id="org_name2" style="width: 150px;" class="form-control" value="请选择班级" readonly>
+                            </div>
+                            <div class="btn-group">
+                                <button id="btn_search" onclick="search()" type="button" class="btn btn-primary btn-space">
+                                    <span class="fa fa-search"></span> 查询
+                                </button>
+                                <button id="btn_reset" onclick="resetSearch()" type="button" class="btn btn-default btn-space">
+                                    <span class="fa fa-eraser"></span> 重置
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 表格 -->
+                        <div class="table-responsive">
+                            <table id="mytab" class="table table-hover"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 查询班级树 -->
+<div class="modal fade" id="searchTree" tabindex="-1" role="dialog">
+    <div class="modal-dialog" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">用户班级</h4>
+            </div>
+            <div class="modal-body">
+                <ul id="sea_tree" class="ztree"></ul>
+                <input type="hidden" id="ztreeid2">
+                <input type="hidden" id="ztreesname2">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="selection2();">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加用户模态框 -->
+<div class="modal fade" id="win_add" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">添加用户</h4>
+            </div>
+            <div class="modal-body" style="padding-left:25%;width:450px">
+                <form id="frm" style="font-size:16px">
+                    <input type="text" id="id" name="id" hidden>
+                    <div class="form-group">
+                        <label for="uname" class="control-label">用户名：</label>
+                        <input type="text" id="uname" name="username" required>
+                    </div>
+                    <div class="btn-group">
+                        <label class="control-label">角色：</label>
+                        <label class="radio-inline">
+                            <input type="radio" onclick="selectUser()" id="role3" name="role" value="3" checked> 管理员
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" onclick="selectUser()" id="role2" name="role" value="2"> 教师
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" onclick="selectUser()" id="role1" name="role" value="1"> 学生
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="pwd" class="control-label">密&emsp;&emsp;码：</label>
+                        <input type="password" id="pwd" name="passwd" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="repwd" class="control-label">确认密码：</label>
+                        <input type="password" id="repwd">
+                    </div>
+                    <div class="btn-group" id="addTree" style="display:none">
+                        <button id="add_org" data-toggle="modal" type="button" class="btn btn-primary btn-space">
+                            <span class="fa fa-search"></span> 班级
+                        </button>
+                        <input id="orgid" name="orgid" type="hidden">
+                        <input id="org_name" class="form-control" value="请选择班级" readonly style="width:211px">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeAdd" class="btn btn-default">关闭</button>
+                <button type="button" id="saveUser" class="btn btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加班级树 -->
+<div class="modal fade" id="addTree_modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">用户班级</h4>
+            </div>
+            <div class="modal-body">
+                <ul id="add_tree" class="ztree"></ul>
+                <input type="hidden" id="ztreeid">
+                <input type="hidden" id="ztreesname">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="selection();">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 修改用户模态框 -->
+<div class="modal fade" id="updateModel" role="dialog" data-backdrop="static">
+    <div class="modal-dialog" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">修改用户</h4>
+            </div>
+            <div class="modal-body" style="padding-left:25%;width:450px">
+                <form id="fm" style="font-size:16px">
+                    <input type="text" id="u_uid" name="uid" hidden>
+                    <div class="form-group">
+                        <label class="control-label">用户名：</label>
+                        <span id="e_uname"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="e_pwd" class="control-label">密&emsp;&emsp;码：</label>
+                        <input type="password" id="e_pwd" name="passwd" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="e_repas" class="control-label">确认密码：</label>
+                        <input type="password" id="e_repas">
+                    </div>
+                    <div class="btn-group" id="updateTree">
+                        <button id="update_org" data-toggle="modal" type="button" class="btn btn-primary btn-space">
+                            <span class="fa fa-search"></span> 班级
+                        </button>
+                        <input id="orgid1" name="orgid" type="hidden">
+                        <input id="org_name1" class="form-control" value="请选择班级" readonly style="width:211px">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeUpdate" class="btn btn-default">关闭</button>
+                <button type="button" id="updateUser" class="btn btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 修改班级树 -->
+<div class="modal fade" id="updateTree_modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">用户班级</h4>
+            </div>
+            <div class="modal-body">
+                <ul id="update_tree" class="ztree"></ul>
+                <input type="hidden" id="ztreeid1">
+                <input type="hidden" id="ztreesname1">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="selection1();">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入进度提示 -->
+<div class="modal fade" id="alertModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id='modal_message' style="text-align: center">
+                    <h2>正在导入中.....</h2>
+                </div>
+                <div class="progress progress-striped active">
+                    <div class="progress-bar progress-bar-success" role="progressbar" style="width: 100%;">
+                        <span class="sr-only">100% 完成</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量导入模态框 -->
+<div class="modal fade" id="excel_modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" style="max-width:600px;">
+        <div class="modal-content">
+            <form id="excelForm" method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h4 class="modal-title">批量导入</h4>
+                </div>
+                <div class="modal-body">
+                    选择文件：<input type="file" name="importUserFile" id="fileName" />
+                    <br/>
+                    注意：仅支持.xls或.xlsx格式
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" onclick="closeExp()">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="openststus()">导入</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 导入失败用户列表 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog" style="max-width:600px;max-height:300px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>导入失败的用户</h3>
+            </div>
+            <div class="modal-body" style="height:300px; overflow:scroll;">
+                <p id="msg"></p>
+                <table id="mymsg"></table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-info" data-dismiss="modal" onclick="import2()">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JS 引入 -->
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/popper.js/popper.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script src="../vendor/chart.js/chart.min.js"></script>
+<script src="../js/carbon.js"></script>
+<script src="../js/demo.js"></script>
+<script src="../vendor/jquery/jquery.form.js"></script>
+<script type="text/javascript" src="../js/bootstrap-table/dist/bootstrap-table.min.js"></script>
+<script type="text/javascript" src="../js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.core.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.excheck.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.exedit.js"></script>
+<script type="text/javascript" src="../js/jquery-ui.min.js"></script>
+<!-- zTree -->
+<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.excheck.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ztree_v3@3.5.48/js/jquery.ztree.exedit.min.js"></script>
+<script src="../js/admin-common.js"></script>
+
+<script type="text/javascript">
+    // 加载公共菜单
+    (function loadPublicMenu() {
+        fetch("./publicMenu.html")
+            .then(r => r.ok ? r.text() : "")
+            .then(html => {
+                if (html) document.getElementById("publicMenu").innerHTML = html;
+            })
+            .catch(() => {});
+    })();
+
+    // 初始化表格
+    $(function () {
+        document.getElementById("frm").reset();
+        $('#mytab').bootstrapTable({
+            method: 'post',
+            url: CTX + '/admin-api/users/page',
+            contentType: "application/x-www-form-urlencoded",
+            sidePagination: 'server',
+            pagination: true,
+
+            queryParams: function (params) {
+                var role = $("#type_search option:selected").attr("data-role");
+                if (role === "9") role = ""; // 9 表示“全部”
+
+                return {
+                    limit: params.limit,
+                    offset: params.offset,
+                    username: $("#susername").val(),
+                    role: role,
+                    orgId: $("#org_id2").val()
+                };
+            },
+            columns: [{
+                checkbox: true,
+                visible: true
+            }, {
+                title: '用户名',
+                align: 'center',
+                halign: 'center',
+                field: 'username'
+            }, {
+                title: '角色',
+                field: 'role',
+                align: 'center',
+                halign: 'center',
+                formatter: function(value, row, index) {
+                    if (value == 3) return "管理员";
+                    else if (value == 2) return "教师";
+                    else if (value == 1) return "学生";
+                }
+            }, {
+                title: '班级',
+                align: 'center',
+                halign: 'center',
+                field: 'name'
+            }, {
+                title: '创建时间',
+                type: 'data',
+                field: 'c_time',
+                align: 'center',
+                halign: 'center',
+                formatter: function(value, row, index) {
+                    if (value != null && value != "") {
+                        return value.substr(0, 19);
+                    }
+                }
+            }, {
+                title: '操作',
+                align: 'center',
+                halign: 'center',
+                field: 'id',
+                formatter: function(value, row, index) {
+                    return '<a onclick="updateMsgInfo(' + index + ')" class="btn btn-sm btn-outline-primary">修改</a>' +
+                        '<input id="uid' + index + '" type="hidden" value="' + row.uid + '" />';
+                }
+            }]
+        });
+    });
+
+    // 查询功能
+    $("#orgsel_open").click(function() {
+        $('#mytab').bootstrapTable('refresh', {pageNumber: 1});
+    });
+
+    function search() {
+        var org_id = $("#org_id2").val();
+        var username = $("#susername").val();
+        username = window.encodeURIComponent(encodeURI(username));
+        var e_type = $("#type_search option:selected").attr("data-role");
+        if (e_type == "9") {
+            e_type = "";
+        }
+        var data = "&orgid=" + org_id + "&role=" + e_type + "&username=" + username;
+        $('#mytab').bootstrapTable('refresh', {
+            url: CTX + "/userCtrl/get_user_info.do?" + data
+        });
+    }
+
+    function resetSearch() {
+        window.location.href = CTX + "/admin/userInfo.html";
+    }
+
+    // 添加用户
+    var role;
+
+    function add_User() {
+        document.getElementById("addTree").style.display = "none";
+        $("#orgid").val("");
+        setTimeout("$('#win_add').modal('show')", 100);
+    }
+
+    function selectUser() {
+        role = $('input:radio[name="role"]:checked').val();
+        if (role == 1) {
+            document.getElementById("addTree").style.display = "";
+        } else {
+            document.getElementById("addTree").style.display = "none";
+        }
+    }
+
+    $("#add_org").click(function() {
+        get_tree();
+        $.fn.zTree.init($("#add_tree"), setting, zNodes);
+        setTimeout("$('#addTree_modal').modal('show')", 100);
+    });
+
+    $("#saveUser").click(function() {
+        var uname = $("#uname").val();
+        if (uname == null || uname == "") {
+            alert("用户名不能为空！");
+            return;
+        }
+        if (uname.length > 16) {
+            alert("用户名不能大于16位！");
+            return;
+        }
+
+        var pwd = $("#pwd").val();
+        var repwd = $("#repwd").val();
+        if (pwd == null || pwd == "") {
+            alert("密码不能为空！");
+            return;
+        }
+        if (pwd.length > 16) {
+            alert("密码不能大于16位！");
+            return;
+        }
+        if (pwd.length < 6) {
+            alert("密码不能小于6位！");
+            return;
+        }
+        if (pwd != repwd) {
+            alert("两次密码不一致！");
+            return;
+        }
+
+        role = $('input:radio[name="role"]:checked').val();
+        var orgid = $("#orgid").val();
+        if (role == 1) {
+            if (orgid == null || orgid == "") {
+                alert("班级不能为空！");
+                return;
+            }
+        }
+
+        uname = window.encodeURIComponent(encodeURI(uname));
+        pwd = window.encodeURIComponent(encodeURI(pwd));
+        var data = "username=" + uname + "&role=" + role + "&passwd=" + pwd + "&orgid=" + orgid;
+
+        $.ajax({
+            type: "post",
+            url: CTX + "/userCtrl/add_userInfo.do?" + data,
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function(res) {
+                if (res.success == "1") {
+                    alert(res.msg);
+                } else if (res.success == "2") {
+                    alert(res.msg);
+                    document.getElementById("frm").reset();
+                    $('#mytab').bootstrapTable('refresh');
+                    setTimeout("$('#win_add').modal('hide')", 100);
+                } else {
+                    alert(res.msg);
+                }
+            },
+            error: function() {
+                alert("添加数据失败！");
+            }
+        });
+    });
+
+    $("#closeAdd").click(function() {
+        setTimeout("$('#win_add').modal('hide')", 100);
+        document.getElementById("frm").reset();
+    });
+
+    // 删除用户
+    function deleteUserInfo() {
+        var b = $('#mytab').bootstrapTable('getSelections');
+        var selectRows = JSON.stringify(b);
+        var xqo = eval('(' + selectRows + ')');
+
+        var ids = "";
+        for (var i in xqo) {
+            ids += xqo[i].uid + ",";
+        }
+        if (ids == "") {
+            alert("请选择要删除的用户");
+            return;
+        }
+        if (confirm("确认删除该用户吗？")) {
+            $.ajax({
+                type: "post",
+                url: CTX + "/userCtrl/delete_userInfo.do?id=" + ids,
+                cache: false,
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    alert(data.msg);
+                    $("#mytab").bootstrapTable('refresh');
+                },
+                error: function() {
+                    alert("获取数据失败");
+                }
+            });
+        }
+    }
+
+    // 初始化密码
+    function initPwd() {
+        var b = $('#mytab').bootstrapTable('getSelections');
+        var selectRows = JSON.stringify(b);
+        var xqo = eval('(' + selectRows + ')');
+
+        var ids = "";
+        for (var i in xqo) {
+            ids += xqo[i].uid + ",";
+        }
+        if (ids == "") {
+            alert("请选择要初始化密码的用户");
+            return;
+        }
+        var data = "&uid=" + ids + "&passwd=000000";
+        if (confirm("确认初始化密码为000000吗？")) {
+            $.ajax({
+                type: "post",
+                url: CTX + "/userCtrl/update_userInfo.do?" + data,
+                cache: false,
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    if (data.success == true) {
+                        alert("初始化成功！");
+                    } else {
+                        alert("初始化失败！");
+                    }
+                    $("#mytab").bootstrapTable('refresh');
+                },
+                error: function() {
+                    alert("获取数据失败");
+                }
+            });
+        }
+    }
+
+    // 修改用户
+    var type;
+    var orgid;
+
+    function updateMsgInfo(index) {
+        var uid = $("#uid" + index).val();
+        $.ajax({
+            type: "post",
+            url: CTX + "/admin-api/users/one?uid=" + uid,
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function(data) {
+                var res = data;
+                if (res.success == true) {
+                    var one = res.one;
+                    var username = one.username;
+                    var name = one.name;
+                    $("#u_uid").val(uid);
+                    $("#e_uname").html(username);
+                    $("#org_name1").val(name);
+                    type = one.role;
+                    orgid = one.orgid;
+                    if (one.role != 1) {
+                        document.getElementById("updateTree").style.display = "none";
+                    } else {
+                        document.getElementById("updateTree").style.display = "";
+                    }
+                    setTimeout("$('#updateModel').modal('show')", 100);
+                }
+            },
+            error: function() {
+                alert("获取数据失败");
+            }
+        });
+    }
+
+    $("#update_org").click(function() {
+        get_tree1();
+        $.fn.zTree.init($("#update_tree"), setting1, zNodes1);
+        setTimeout("$('#updateTree_modal').modal('show')", 100);
+    });
+
+    $("#updateUser").click(function() {
+        var uid = $("#u_uid").val();
+        var pwd = $("#e_pwd").val();
+        var repwd = $("#e_repas").val();
+        var orgid1 = $("#orgid1").val();
+
+        if (pwd != null || pwd != "") {
+            if (pwd.length > 16) {
+                alert("密码不能大于16位！");
+                return;
+            } else if (pwd.length < 6 && pwd.length > 0) {
+                alert("密码不能小于6位！");
+                return;
+            } else if (pwd != repwd) {
+                alert("两次密码不一致！");
+                return;
+            }
+        }
+
+        if (type == 2 || type == 3) {
+            if (pwd == null || pwd == "") {
+                setTimeout("$('#updateModel').modal('hide')", 100);
+                alert("密码未修改！");
+                return;
+            }
+        }
+        if (type == 1) {
+            if (pwd == null || pwd == "") {
+                if (orgid1 == null || orgid1 == "") {
+                    setTimeout("$('#updateModel').modal('hide')", 100);
+                    alert("信息未修改！");
+                    return;
+                }
+            }
+        }
+
+        pwd = window.encodeURIComponent(encodeURI(pwd));
+        var data = "&uid=" + uid + "&passwd=" + pwd + "&orgid=" + orgid1;
+        $.ajax({
+            type: "post",
+            url: CTX + "/admin-api/users/update?" + data,
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function(res) {
+                alert(res.msg);
+                if (res.success == true) {
+                    $('#mytab').bootstrapTable('refresh');
+                    setTimeout("$('#updateModel').modal('hide')", 100);
+                    document.getElementById("fm").reset();
+                }
+            },
+            error: function() {
+                alert("修改数据失败！");
+            }
+        });
+    });
+
+    $("#closeUpdate").click(function() {
+        setTimeout("$('#updateModel').modal('hide')", 100);
+        document.getElementById("fm").reset();
+    });
+
+    // 导入模板
+    function expStyle() {
+        location.href = CTX + '/userCtrl/exportStyle.do';
+    }
+
+    // 批量导入
+    function closeExp() {
+        $('#fileName').val("");
+        $('#excel_modal').modal('hide');
+    }
+
+    function openststus() {
+        var name = $('#fileName').val();
+        var name1 = name.substring(name.lastIndexOf(".") + 1);
+        if (name == null || name == "") {
+            alert("导入文件不能为空！");
+            return;
+        } else {
+            if (name1 != 'xls' && name1 != 'XLS' && name1 != 'xlsx' && name1 != 'XLSX') {
+                alert("导入文件格式不正确！");
+                return;
+            } else {
+                $('#alertModal').modal('show');
+                $('#excel_modal').modal('hide');
+                $("#excelForm").submit();
+            }
+        }
+    }
+
+    $("#excelForm").ajaxForm(function(data) {
+        var data1 = eval("(" + data + ")");
+        document.getElementById("excelForm").reset();
+        $("#mytab").bootstrapTable('refresh');
+        $('#mymsg').html("");
+        setTimeout("$('#alertModal').modal('hide')", 500);
+        if (data1.success == "a") {
+            alert(data1.msg);
+        } else if (data1.success == "b") {
+            var list = data1.list;
+            var html = "";
+            html += '<tr style="width:550px;height:45px;border-bottom:1px solid #eceeef">';
+            html += '<td style="width:250px">用户名</td>';
+            html += '<td style="width:550px">错误原因</td>';
+            html += '</tr>';
+            for (var i = 0; i < list.length; i++) {
+                html += '<tr style="width:550px;height:45px;border-bottom:1px solid #eceeef">';
+                html += '<td style="width:250px">' + list[i].username + '</td>';
+                html += '<td style="width:550px">' + list[i].reason + '</td>';
+                html += '</tr>';
+            }
+            $('#mymsg').html(html);
+            $('#msg').css("display", "none");
+            $('#myModal').modal('show');
+        } else if (data1.success == "d") {
+            alert(data1.msg);
+        } else if (data1.success == "e") {
+            alert(data1.msg);
+        } else if (data1.success == "f") {
+            alert(data1.msg);
+        }
+    });
+
+    function import2() {
+        $("#mytab").bootstrapTable('refresh');
+        $('#myModal').modal('hide');
+    }
+
+    // ==================== 添加班级树 ====================
+    var setting = {
+        view: {
+            selectedMulti: false
+        },
+        check: {
+            enable: true,
+            chkStyle: "radio",
+            radioType: "all"
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        edit: {
+            enable: false
+        },
+        callback: {
+            onCheck: onCheck
+        }
+    };
+    var zNodes = "";
+
+    function get_tree() {
+        $.ajax({
+            type: "post",
+            url: CTX + "/orgCtrl/getOrgInfo.do",
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function(res) {
+                zNodes = res.tree;
+            },
+            error: function() {
+                alert("班级查询失败！");
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        get_tree();
+        $.fn.zTree.init($("#add_tree"), setting, zNodes);
+    });
+
+    function onCheck(e, treeId, treeNode) {
+        var zTree = $.fn.zTree.getZTreeObj("add_tree").getNodesByFilter(filter);
+        var ids = "";
+        var names = "";
+        for (var i = 0; i < zTree.length; i++) {
+            if (zTree[i].id != null) {
+                ids += (i == (zTree.length - 1)) ? zTree[i].id : zTree[i].id + ",";
+            }
+            if (zTree[i].name != null) {
+                names += (i == (zTree.length - 1)) ? zTree[i].name : zTree[i].name + ",";
+            }
+        }
+        $("#ztreesname").val(names);
+        $("#ztreeid").val(ids);
+    }
+
+    function filter(node) {
+        return (node.checked == true);
+    }
+
+    function selection() {
+        var id = $("#ztreeid").val();
+        var name = $("#ztreesname").val();
+        if (id != "" && name != "") {
+            $("#addTree_modal").modal('hide');
+            $("#orgid").val(id);
+            $("#org_name").val(name);
+        } else {
+            alert("请选择班级！");
+        }
+    }
+
+    // ==================== 修改班级树 ====================
+    var setting1 = {
+        view: {
+            selectedMulti: false
+        },
+        check: {
+            enable: true,
+            chkStyle: "radio",
+            radioType: "all"
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        edit: {
+            enable: false
+        },
+        callback: {
+            onCheck: onCheck1
+        }
+    };
+    var zNodes1 = "";
+
+    function get_tree1() {
+        $.ajax({
+            type: "post",
+            url: CTX + "/orgCtrl/getOrgInfo.do",
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function(res) {
+                zNodes1 = res.tree;
+            },
+            error: function() {
+                alert("班级分类查询失败！");
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        get_tree1();
+        $.fn.zTree.init($("#update_tree"), setting1, zNodes1);
+    });
+
+    function onCheck1(e, treeId, treeNode) {
+        var zTree = $.fn.zTree.getZTreeObj("update_tree").getNodesByFilter(filter);
+        var ids = "";
+        var names = "";
+        for (var i = 0; i < zTree.length; i++) {
+            if (zTree[i].id != null) {
+                ids += (i == (zTree.length - 1)) ? zTree[i].id : zTree[i].id + ",";
+            }
+            if (zTree[i].name != null) {
+                names += (i == (zTree.length - 1)) ? zTree[i].name : zTree[i].name + ",";
+            }
+        }
+        $("#ztreesname1").val(names);
+        $("#ztreeid1").val(ids);
+    }
+
+    function selection1() {
+        var id = $("#ztreeid1").val();
+        var name = $("#ztreesname1").val();
+        if (id != "" && name != "") {
+            $("#updateTree_modal").modal('hide');
+            $("#orgid1").val(id);
+            $("#org_name1").val(name);
+        } else {
+            alert("请选择班级！");
+        }
+    }
+
+    // ==================== 查询班级树 ====================
+    var setting2 = {
+        view: {
+            selectedMulti: false
+        },
+        check: {
+            enable: true,
+            chkboxType: {
+                "Y": "s",
+                "N": "s"
+            }
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        edit: {
+            enable: false
+        },
+        callback: {
+            onCheck: onCheck2
+        }
+    };
+    var zNodes2 = "";
+
+    function get_tree2() {
+        $.ajax({
+            type: "post",
+            url: CTX + "/orgCtrl/getOrgInfo.do",
+            cache: false,
+            async: false,
+            dataType: 'json',
+            success: function(res) {
+                zNodes2 = res.tree;
+            },
+            error: function() {
+                alert("班级查询失败！");
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        get_tree2();
+        $.fn.zTree.init($("#sea_tree"), setting2, zNodes2);
+    });
+
+    function onCheck2(e, treeId, treeNode) {
+        var zTree = $.fn.zTree.getZTreeObj("sea_tree").getNodesByFilter(filter);
+        var ids = "";
+        var names = "";
+        for (var i = 0; i < zTree.length; i++) {
+            if (zTree[i].id != null) {
+                ids += (i == (zTree.length - 1)) ? zTree[i].id : zTree[i].id + ",";
+            }
+            if (zTree[i].name != null) {
+                names += (i == (zTree.length - 1)) ? zTree[i].name : zTree[i].name + ",";
+            }
+        }
+        $("#ztreesname2").val(names);
+        $("#ztreeid2").val(ids);
+    }
+
+    function selection2() {
+        var id = $("#ztreeid2").val();
+        var name = $("#ztreesname2").val();
+        if (id != "" && name != "") {
+            $("#searchTree").modal('hide');
+            $("#org_id2").val(id);
+            $("#org_name2").val(name);
+        } else {
+            alert("请选择班级！");
+        }
+    }
+
+    document.addEventListener("click", function(e) {
+        const btn = e.target.closest(".sidebar-toggle");
+        if (!btn) return;
+        e.preventDefault();
+        document.body.classList.toggle("sidebar-hidden");
+    });
+
+</script>
+</body>
+</html>

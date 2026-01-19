@@ -28,7 +28,7 @@ public class Content {
     private byte[] contentBytes;
     private String scode;// 源码文件地址
     private String sdll;// 程序运行文件地址
-    private String creat_time;
+    private String c_time;
     private String objective;
     private String type;
     @TableField(exist = false)

@@ -7,6 +7,7 @@ package com.example.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -21,7 +22,9 @@ public class User implements Serializable {
     private String username;
     private String passwd;
     private int role;
-    private String c_time;
+    @TableField("c_time")
+    @JsonProperty("c_time")
+    private String cTime;
     private String name;
     private String sex;
     private String prof;
