@@ -387,6 +387,7 @@
                 formatter: function(value, row, index) {
                     return ''
                         + '<a onclick="updateMsgInfo(' + index + ')" class="btn btn-sm btn-outline-primary">修改</a> '
+                        // + '<a onclick="deleteMsgInfo(' + index + ')" class="btn btn-sm btn-outline-danger">删除</a>'
                         + '<input id="uid' + index + '" type="hidden" value="' + row.uid + '" />';
                 }
             }]
