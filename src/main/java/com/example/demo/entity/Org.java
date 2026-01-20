@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -8,6 +9,9 @@ import lombok.Data;
 public class Org {
     private String id;
     private String name;
+
+    @TableField("pId")
     private String pId;
+
     private String uid;
 }

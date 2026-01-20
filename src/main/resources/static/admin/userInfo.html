@@ -113,11 +113,11 @@
                 <form id="frm" style="font-size:16px">
                     <input type="text" id="id" name="id" hidden>
                     <div class="form-group">
-                        <label for="uname" class="control-label">用户名：</label>
+                        <label for="uname" class="control-label">用&ensp;户&ensp;名：</label>
                         <input type="text" id="uname" name="username" required>
                     </div>
                     <div class="btn-group">
-                        <label class="control-label">角色：</label>
+                        <label class="control-label">角&ensp;&ensp;&ensp;&ensp;色：</label>
                         <label class="radio-inline">
                             <input type="radio" onclick="selectUser()" id="role3" name="role" value="3" checked> 管理员
                         </label>
@@ -385,8 +385,9 @@
                 halign: 'center',
                 field: 'id',
                 formatter: function(value, row, index) {
-                    return '<a onclick="updateMsgInfo(' + index + ')" class="btn btn-sm btn-outline-primary">修改</a>' +
-                        '<input id="uid' + index + '" type="hidden" value="' + row.uid + '" />';
+                    return ''
+                        + '<a onclick="updateMsgInfo(' + index + ')" class="btn btn-sm btn-outline-primary">修改</a> '
+                        + '<input id="uid' + index + '" type="hidden" value="' + row.uid + '" />';
                 }
             }]
         });
@@ -455,67 +456,47 @@
     });
 
     $("#saveUser").click(function() {
+        role = $('input:radio[name="role"]:checked').val();
         var uname = $("#uname").val();
-        if (uname == null || uname == "") {
-            alert("用户名不能为空！");
-            return;
-        }
-        if (uname.length > 16) {
-            alert("用户名不能大于16位！");
-            return;
-        }
+        if (!uname) { alert("用户名不能为空！"); return; }
+        if (uname.length > 16) { alert("用户名不能大于16位！"); return; }
 
         var pwd = $("#pwd").val();
         var repwd = $("#repwd").val();
-        if (pwd == null || pwd == "") {
-            alert("密码不能为空！");
-            return;
-        }
-        if (pwd.length > 16) {
-            alert("密码不能大于16位！");
-            return;
-        }
-        if (pwd.length < 6) {
-            alert("密码不能小于6位！");
-            return;
-        }
-        if (pwd != repwd) {
-            alert("两次密码不一致！");
-            return;
-        }
+        if (!pwd) { alert("密码不能为空！"); return; }
+        if (pwd.length > 16) { alert("密码不能大于16位！"); return; }
+        if (pwd.length < 6) { alert("密码不能小于6位！"); return; }
+        if (pwd != repwd) { alert("两次密码不一致！"); return; }
 
-        role = $('input:radio[name="role"]:checked').val();
         var orgid = $("#orgid").val();
-        if (role == 1) {
-            if (orgid == null || orgid == "") {
-                alert("班级不能为空！");
-                return;
-            }
+        if (role == 1 && (!orgid)) {
+            alert("班级不能为空！");
+            return;
         }
-
-        uname = window.encodeURIComponent(encodeURI(uname));
-        pwd = window.encodeURIComponent(encodeURI(pwd));
-        var data = "username=" + uname + "&role=" + role + "&passwd=" + pwd + "&orgid=" + orgid;
 
         $.ajax({
             type: "post",
-            url: CTX + "/userCtrl/add_userInfo.do?" + data,
+            url: CTX + "/admin-api/users/create",
+            data: {
+                username: uname,
+                role: role,
+                passwd: pwd,
+                orgid: orgid
+            },
             cache: false,
-            async: false,
             dataType: 'json',
             success: function(res) {
-                if (res.success == "1") {
-                    alert(res.msg);
-                } else if (res.success == "2") {
-                    alert(res.msg);
+                if (res && res.success) {
+                    alert(res.msg || "创建成功");
                     document.getElementById("frm").reset();
                     $('#mytab').bootstrapTable('refresh');
                     setTimeout("$('#win_add').modal('hide')", 100);
                 } else {
-                    alert(res.msg);
+                    alert((res && res.msg) ? res.msg : "创建失败");
                 }
             },
-            error: function() {
+            error: function(xhr) {
+                console.log(xhr);
                 alert("添加数据失败！");
             }
         });
@@ -525,6 +506,33 @@
         setTimeout("$('#win_add').modal('hide')", 100);
         document.getElementById("frm").reset();
     });
+
+    // //删除单个用户
+    // function deleteMsgInfo(index) {
+    //     var uid = $("#uid" + index).val();
+    //     if (!uid) return;
+    //
+    //     if (!confirm("确认删除该用户吗？")) return;
+    //
+    //     $.ajax({
+    //         type: "post",
+    //         url: CTX + "/admin-api/users/delete",
+    //         data: { uids: uid },
+    //         dataType: "json",
+    //         success: function(res) {
+    //             if (res && res.success) {
+    //                 alert(res.msg || "删除成功");
+    //                 $("#mytab").bootstrapTable('refresh', {pageNumber: 1});
+    //             } else {
+    //                 alert((res && res.msg) ? res.msg : "删除失败");
+    //             }
+    //         },
+    //         error: function() {
+    //             alert("删除失败（网络或服务器错误）");
+    //         }
+    //     });
+    // }
+
 
     // 删除用户
     function deleteUserInfo() {
@@ -540,16 +548,21 @@
             alert("请选择要删除的用户");
             return;
         }
-        if (confirm("确认删除该用户吗？")) {
+        // 去掉最后一个逗号
+        ids = ids.replace(/,+$/, "");
+        if (confirm("确认删除选中的用户吗？")) {
             $.ajax({
                 type: "post",
-                url: CTX + "/userCtrl/delete_userInfo.do?id=" + ids,
-                cache: false,
-                async: false,
+                url: CTX + "/admin-api/users/delete",
+                data: { uids: ids },
                 dataType: 'json',
-                success: function(data) {
-                    alert(data.msg);
-                    $("#mytab").bootstrapTable('refresh');
+                success: function(res) {
+                    if (res && res.success) {
+                        alert(res.msg || "删除成功");
+                        $("#mytab").bootstrapTable('refresh', {pageNumber: 1});
+                    } else {
+                        alert((res && res.msg) ? res.msg : "删除失败");
+                    }
                 },
                 error: function() {
                     alert("获取数据失败");

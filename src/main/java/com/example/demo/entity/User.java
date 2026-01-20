@@ -5,6 +5,7 @@
 
 package com.example.demo.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,7 +23,7 @@ public class User implements Serializable {
     private String username;
     private String passwd;
     private int role;
-    @TableField("c_time")
+    @TableField(value = "c_time", fill = FieldFill.INSERT)
     @JsonProperty("c_time")
     private String cTime;
     private String name;
@@ -79,5 +80,9 @@ public class User implements Serializable {
             case 3 -> "管理员";
             default -> "未知";
         };
+    }
+
+    public void setC_time(String currentTime) {
+        this.cTime = currentTime;
     }
 }
