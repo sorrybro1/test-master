@@ -13,6 +13,9 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.poi.ss.usermodel.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -263,4 +266,178 @@ public class AdminUserController {
         return Map.of("success", true, "msg", "删除成功，删除数量：" + deleted + "，跳过：" + skipped);
     }
 
+
+    @PostMapping("/initPwd")
+    public Map<String, Object> initPwd(@RequestParam("uids") String uids, HttpSession session) {
+        if (!isAdminLoggedIn(session)) {
+            return Map.of("success", false, "msg", "管理员未登录");
+        }
+        if (uids == null || uids.trim().isEmpty()) {
+            return Map.of("success", false, "msg", "uids不能为空");
+        }
+
+        String[] arr = uids.split(",");
+        int updated = 0;
+        int skipped = 0;
+
+        //  初始化密码（要固定啥就改这里）
+        String initRawPwd = "123456";
+        String initHash = md5Upper(initRawPwd);
+
+        for (String raw : arr) {
+            String uid = raw == null ? "" : raw.trim();
+            if (uid.isEmpty()) continue;
+
+            User user = userMapper.selectOne(new QueryWrapper<User>().eq("uid", uid));
+            if (user == null) { skipped++; continue; }
+
+            //  只允许重置学生/老师；管理员跳过
+            if (!(user.getRole() == 1 || user.getRole() == 2)) {
+                skipped++;
+                continue;
+            }
+
+            int rows = userMapper.update(null,
+                    new UpdateWrapper<User>()
+                            .eq("uid", uid)
+                            .set("passwd", initHash));
+            if (rows > 0) updated++;
+        }
+
+        return Map.of("success", true, "msg", "初始化成功：" + updated + "，跳过：" + skipped);
+    }
+
+    @PostMapping(value = "/import", produces = "text/plain;charset=UTF-8")
+    public String importUsers(@RequestParam("importUserFile") MultipartFile file, HttpSession session) throws Exception {
+        if (!isAdminLoggedIn(session)) {
+            return "{\"success\":\"d\",\"msg\":\"管理员未登录\"}";
+        }
+        if (file == null || file.isEmpty()) {
+            return "{\"success\":\"e\",\"msg\":\"导入文件不能为空\"}";
+        }
+
+        String filename = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+        if (!(filename.endsWith(".xls") || filename.endsWith(".xlsx"))) {
+            return "{\"success\":\"f\",\"msg\":\"导入文件格式不正确（仅支持xls/xlsx）\"}";
+        }
+
+        List<Map<String, String>> failList = new ArrayList<>();
+        int ok = 0;
+
+        try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
+            Sheet sheet = wb.getSheetAt(0);
+            if (sheet == null) {
+                return "{\"success\":\"d\",\"msg\":\"Excel内容为空\"}";
+            }
+
+            // 默认第0行是表头，第1行开始是数据
+            int last = sheet.getLastRowNum();
+            for (int r = 1; r <= last; r++) {
+                Row row = sheet.getRow(r);
+                if (row == null) continue;
+
+                String username = cellToString(row.getCell(0)).trim();
+                String passwd   = cellToString(row.getCell(1)).trim();
+                String roleStr  = cellToString(row.getCell(2)).trim();
+                String orgNameOrId = cellToString(row.getCell(3)).trim();
+
+                if (username.isEmpty()) continue; // 空行跳过
+                if (username.length() > 16) {
+                    failList.add(fail(username, "用户名长度不能大于16位"));
+                    continue;
+                }
+
+                Integer role;
+                try {
+                    role = Integer.valueOf(roleStr);
+                } catch (Exception ex) {
+                    failList.add(fail(username, "角色必须是数字：1学生/2老师/3管理员"));
+                    continue;
+                }
+                if (!(role == 1 || role == 2 || role == 3)) {
+                    failList.add(fail(username, "角色只允许：1学生/2老师/3管理员"));
+                    continue;
+                }
+
+                if (passwd.isEmpty()) passwd = "123456"; // 允许空，默认123456
+                if (passwd.length() < 6 || passwd.length() > 16) {
+                    failList.add(fail(username, "密码长度需 6-16 位（为空默认123456）"));
+                    continue;
+                }
+
+                // 用户名重复校验
+                Long cnt = userMapper.selectCount(new QueryWrapper<User>().eq("username", username));
+                if (cnt != null && cnt > 0) {
+                    failList.add(fail(username, "用户名已存在"));
+                    continue;
+                }
+
+                // 学生必须有班级（老师/管理员不需要）
+                String orgId = null;
+                if (role == 1) {
+                    if (orgNameOrId.isEmpty()) {
+                        failList.add(fail(username, "学生必须填写所属班级（班级ID或班级名称）"));
+                        continue;
+                    }
+                    // 如果填的是纯数字 => 当作orgId；否则当作班级名称去查 st_org
+                    if (orgNameOrId.matches("\\d+")) {
+                        orgId = orgNameOrId;
+                    } else {
+                        Org org = orgMapper.selectOne(new QueryWrapper<Org>().eq("name", orgNameOrId));
+                        if (org == null) {
+                            failList.add(fail(username, "班级不存在：" + orgNameOrId));
+                            continue;
+                        }
+                        orgId = org.getId();
+                    }
+                }
+
+                // 插入 st_user
+                String uid = UUID.randomUUID().toString().replace("-", "").toUpperCase(Locale.ROOT);
+
+                User u = new User();
+                u.setUid(uid);
+                u.setUsername(username);
+                u.setRole(role);
+                u.setPasswd(md5Upper(passwd));
+                u.setC_time(getCurrentTime()); // 写入创建时间
+
+                int ins = userMapper.insert(u);
+                if (ins <= 0) {
+                    failList.add(fail(username, "插入用户失败"));
+                    continue;
+                }
+
+                // 学生写入 st_orgrole
+                if (role == 1 && orgId != null) {
+                    Orgrole or = new Orgrole();
+                    or.setUserid(uid);
+                    or.setOrgid(orgId);
+                    orgroleMapper.insert(or);
+                }
+
+                ok++;
+            }
+        }
+
+        if (failList.isEmpty()) {
+            return "{\"success\":\"a\",\"msg\":\"导入成功，共导入 " + ok + " 条\"}";
+        } else {
+            String listJson = new ObjectMapper().writeValueAsString(failList);
+            return "{\"success\":\"b\",\"msg\":\"导入完成：成功 " + ok + " 条，失败 " + failList.size() + " 条\",\"list\":" + listJson + "}";
+        }
+    }
+
+    private Map<String, String> fail(String username, String reason) {
+        Map<String, String> m = new HashMap<>();
+        m.put("username", username);
+        m.put("reason", reason);
+        return m;
+    }
+
+    private String cellToString(Cell cell) {
+        if (cell == null) return "";
+        cell.setCellType(CellType.STRING);
+        return cell.getStringCellValue() == null ? "" : cell.getStringCellValue();
+    }
 }

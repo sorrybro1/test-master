@@ -28,7 +28,7 @@
                 <div class="col-md-12">
                     <button class="btn btn-success" onclick="add_User()">新建用户</button>
                     <button class="btn btn-danger btn-space" onclick="deleteUserInfo()">删除用户</button>
-                    <button class="btn btn-primary btn-space" onclick="expStyle()">下载导入模板</button>
+                    <button type="button" class="btn btn-info" onclick="downloadTemplate()">下载导入模板</button>
                     <button class="btn btn-primary btn-space" data-toggle="modal" data-target="#excel_modal">导入用户</button>
                     <button class="btn btn-info btn-space" onclick="initPwd()">初始化密码</button>
                 </div>
@@ -575,39 +575,38 @@
     // 初始化密码
     function initPwd() {
         var b = $('#mytab').bootstrapTable('getSelections');
-        var selectRows = JSON.stringify(b);
-        var xqo = eval('(' + selectRows + ')');
-
-        var ids = "";
-        for (var i in xqo) {
-            ids += xqo[i].uid + ",";
-        }
-        if (ids == "") {
+        if (!b || b.length === 0) {
             alert("请选择要初始化密码的用户");
             return;
         }
-        var data = "&uid=" + ids + "&passwd=000000";
-        if (confirm("确认初始化密码为000000吗？")) {
-            $.ajax({
-                type: "post",
-                url: CTX + "/userCtrl/update_userInfo.do?" + data,
-                cache: false,
-                async: false,
-                dataType: 'json',
-                success: function(data) {
-                    if (data.success == true) {
-                        alert("初始化成功！");
-                    } else {
-                        alert("初始化失败！");
-                    }
-                    $("#mytab").bootstrapTable('refresh');
-                },
-                error: function() {
-                    alert("获取数据失败");
-                }
-            });
+
+        var ids = "";
+        for (var i in b) {
+            ids += b[i].uid + ",";
         }
+        ids = ids.replace(/,+$/, "");
+
+        if (!confirm("确认将密码初始化为123456吗？")) return;
+
+        $.ajax({
+            type: "post",
+            url: CTX + "/admin-api/users/initPwd",
+            data: { uids: ids },
+            dataType: "json",
+            success: function(res) {
+                if (res && res.success) {
+                    alert(res.msg || "初始化成功");
+                    $("#mytab").bootstrapTable('refresh', {pageNumber: 1});
+                } else {
+                    alert((res && res.msg) ? res.msg : "初始化失败");
+                }
+            },
+            error: function() {
+                alert("初始化失败（网络或服务器错误）");
+            }
+        });
     }
+
 
     // 修改用户
     var type;
@@ -1033,7 +1032,16 @@
             alert("请选择班级！");
         }
     }
+    
+    //下载导入模板
+    function downloadTemplate() {
+        window.location.href = CTX + "/admin/template/user_import_template.xls";
+    }
 
+    // 让批量导入表单提交到新接口
+    $(function () {
+        $("#excelForm").attr("action", CTX + "/admin-api/users/import");
+    });
     document.addEventListener("click", function(e) {
         const btn = e.target.closest(".sidebar-toggle");
         if (!btn) return;
