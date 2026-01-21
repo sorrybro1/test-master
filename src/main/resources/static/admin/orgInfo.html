@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>班级管理</title>
+
+    <!-- 和你 userInfo.html 同一套资源路径风格 -->
+    <link rel="stylesheet" href="../vendor/simple-line-icons/css/simple-line-icons.css">
+    <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <!-- bootstrapStyle -->
+    <link href="../js/bootstrap-tree/css/bootstrapStyle/bootstrapStyle.css" rel="stylesheet">
+</head>
+
+<body class="sidebar-fixed header-fixed">
+<div class="page-wrapper" style="height: 100%;">
+    <!-- 公共菜单（和 userInfo.html 一样用 fetch 注入） -->
+    <div id="publicMenu"></div>
+
+    <div class="content" style="height: 100%;">
+        <div class="container-fluid" style="height: 100%;">
+            <div class="row">
+                <div class="col-md-12">
+                    <p>班级管理</p>
+                </div>
+            </div>
+
+            <div class="row" style="min-height: 90%;">
+                <div class="col-md-12">
+                    <div class="card-body">
+                        <ul id="manager_tree" class="ztree"></ul>
+                        <input type="hidden" id="ztreeid">
+                        <input type="hidden" id="ztreesname">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页脚 -->
+            <div id="foot"></div>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/popper.js/popper.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="../vendor/chart.js/chart.min.js"></script>
+<script src="../js/carbon.js"></script>
+<script src="../js/demo.js"></script>
+<script type="text/javascript" src="../js/bootstrap-table/dist/bootstrap-table.min.js"></script>
+<script type="text/javascript" src="../js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script src="../vendor/jquery/jquery.form.js"></script>
+<!--Bootstrap tree -->
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.core.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.excheck.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.exedit.js"></script>
+<script src="../js/admin-common.js"></script>
+<script>
+
+    // 加载公共菜单/页脚
+    (function () {
+        fetch("./publicMenu.html").then(r => r.text()).then(html => {
+            if (html) document.getElementById("publicMenu").innerHTML = html;
+        }).catch(() => {});
+
+        fetch("./foot.html")
+            .then(r => r.text())
+            .then(html => {
+                const el = document.getElementById("foot");
+                if (el) el.innerHTML = html || "";
+            })
+            .catch(() => {
+                // 不要让脚本中断
+            });
+    })();
+
+    var setting = {
+        view: {
+            addHoverDom: addHoverDom,
+            removeHoverDom: removeHoverDom,
+            selectedMulti: false
+        },
+        check: {
+            enable: true,
+            chkboxType: {"Y": "", "N": "s"}
+        },
+        data: {
+            simpleData: { enable: true }
+        },
+        edit: { enable: true },
+        callback: {
+            onCheck: onCheck,
+            beforeRemove: beforeRemove,
+            onRename: onRename
+        }
+    };
+
+    var zNodes = [];
+
+    //  查询分类树
+    function get_tree() {
+        $.ajax({
+            type: "post",
+            url: CTX + "/admin-api/orgs/tree",
+            cache: false,
+            async: false,
+            dataType: "json",
+            success: function (res) {
+                zNodes = (res && res.tree) ? res.tree : [];
+            },
+            error: function () {
+                alert("班级分类查询失败！");
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        get_tree();
+        if (!$.fn.zTree) {
+            console.error("zTree 没加载成功：请检查 ./js/bootstrap-tree/js/ 这三个文件是否能访问到");
+            return;
+        }
+        var zTreeObj = $.fn.zTree.init($("#manager_tree"), setting, zNodes);
+        zTreeObj.expandAll(true);
+    });
+
+    // 删除无效按钮
+    function removeHoverDom(treeId, treeNode) {
+        $("#addBtn_" + treeNode.tId).unbind().remove();
+    }
+
+    // 勾选：把选中节点 id/name 拼起来
+    function onCheck(e, treeId, treeNode) {
+        var zTree = $.fn.zTree.getZTreeObj("manager_tree").getNodesByFilter(filter);
+        var ids = "";
+        var names = "";
+        for (var i = 0; i < zTree.length; i++) {
+            if (zTree[i].id != null) ids += (i === zTree.length - 1) ? zTree[i].id : (zTree[i].id + ",");
+            if (zTree[i].name != null) names += (i === zTree.length - 1) ? zTree[i].name : (zTree[i].name + ",");
+        }
+        $("#ztreesname").val(names);
+        $("#ztreeid").val(ids);
+    }
+
+    function filter(node) { return node.checked === true; }
+
+    //  添加节点
+    function addHoverDom(treeId, treeNode) {
+        var sObj = $("#" + treeNode.tId + "_span");
+        if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0) return;
+
+        var addStr = "<span class='button add' id='addBtn_" + treeNode.tId
+            + "' title='添加' onfocus='this.blur();'></span>";
+        sObj.after(addStr);
+
+        var btn = $("#addBtn_" + treeNode.tId);
+        if (btn) btn.bind("click", function () {
+            var name = "new node";
+            $.post(CTX + "/admin-api/orgs/add?pId=" + encodeURIComponent(treeNode.id) + "&name=" + encodeURIComponent(name), function (data) {
+                // 你接口返回格式可自定，这里只要失败时给 false/或 success=false 即可
+                if (data === false || data === "false") alert("添加节点失败！");
+                refreshTree();
+            }).fail(function () {
+                alert("添加节点失败！");
+            });
+        });
+    }
+
+    //  修改节点
+    function onRename(e, treeId, treeNode, isCancel) {
+        var id = treeNode.id;
+        var name = (treeNode.name || "").trim();
+
+        if (!name) {
+            alert("班级分类名称不能为空！");
+            refreshTree();
+            return;
+        }
+
+        $.post(CTX + "/admin-api/orgs/update?id=" + encodeURIComponent(id) + "&name=" + encodeURIComponent(name), function (res) {
+            // res 可返回 {success: true/false, msg:"..."}，
+            try {
+                var r = typeof res === "string" ? JSON.parse(res) : res;
+                if (r && r.success === false) alert(r.msg || "修改失败");
+            } catch (e) {}
+            refreshTree();
+        }).fail(function () {
+            alert("修改失败！");
+            refreshTree();
+        });
+    }
+
+    //  删除节点
+    function onRemove(treeId, treeNode) {
+        var id = treeNode.id;
+        $.post(CTX + "/admin-api/orgs/delete?id=" + encodeURIComponent(id), function (data) {
+            if (data === false || data === "false") alert("删除失败！");
+            refreshTree();
+        }).fail(function () {
+            alert("删除失败！");
+            refreshTree();
+        });
+    }
+
+    // 删除前校验是否被使用
+    function beforeRemove(treeId, treeNode) {
+        $.post(CTX + "/admin-api/orgs/canDelete?id=" + encodeURIComponent(treeNode.id), function (res) {
+            // 期望返回：{success:true/false, msg:"..."}
+            var r = res;
+            try { r = typeof res === "string" ? JSON.parse(res) : res; } catch (e) {}
+
+            if (r && r.success === false) {
+                alert(r.msg || "该班级正在使用，无法删除");
+                refreshTree();
+                return;
+            }
+
+            if (confirm("确认删除 节点 -- " + treeNode.name + " 吗？")) {
+                onRemove(treeId, treeNode);
+            } else {
+                refreshTree();
+            }
+        }).fail(function () {
+            alert("删除校验失败！");
+            refreshTree();
+        });
+
+        // zTree 要求返回 false，表示我们自己处理异步删除逻辑
+        return false;
+    }
+
+    function refreshTree() {
+        get_tree();
+        var zTreeObj = $.fn.zTree.init($("#manager_tree"), setting, zNodes);
+        zTreeObj.expandAll(true);
+    }
+
+    document.addEventListener("click", function(e) {
+        const btn = e.target.closest(".sidebar-toggle");
+        if (!btn) return;
+        e.preventDefault();
+        document.body.classList.toggle("sidebar-hidden");
+    });
+
+</script>
+
+</body>
+</html>

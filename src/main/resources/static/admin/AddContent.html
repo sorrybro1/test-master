@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加内容</title>
+
+    <link rel="stylesheet" href="../vendor/simple-line-icons/css/simple-line-icons.css">
+    <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../ckeditor/plugins/jdmath/mathquill-0.10.1/mathquill.css">
+</head>
+
+<body class="sidebar-fixed header-fixed">
+<div class="page-wrapper">
+    <!-- 公共菜单 -->
+    <div id="publicMenu"></div>
+
+    <div class="content">
+        <div class="container-fluid">
+
+            <div class="row" style="margin: 10px 0;">
+                <div class="col-md-12">
+                    <button type="button" class="btn btn-success" onclick="backToList()">返回</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card-body">
+                        <div class="table-responsive">
+
+                            <form id="add_form" enctype="multipart/form-data">
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-control-label">分类:</label>
+                                            <div id="bank" class="mdc-form-field"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="title" class="control-label">标题:</label>
+                                            <input type="text" class="form-control" id="title" name="title">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="pid" class="control-label">排序:</label>
+                                            <input type="text" class="form-control" id="pid" name="pid" value="1">
+                                            <small>(输入1~30的整数，用于排序显示，默认值为1)</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="import_scode" class="control-label">程序运行EXE上传:</label>
+                                            <input type="file" name="import_scode" id="import_scode">
+                                            <small>(类型：*.exe/*.EXE 或 *.rar/*.RAR)</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="import_sdll" class="control-label">源码下载RAR上传:</label>
+                                            <input type="file" name="import_sdll" id="import_sdll">
+                                            <small>(类型：*.rar/*.RAR 或 *.zip/*.ZIP)</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="codetext" class="control-label">源码:</label>
+                                            <textarea class="form-control" style="height:300px" id="codetext" name="codetext"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-control-label">内容定义:</label>
+                                            <textarea class="ckeditor" id="content"></textarea>
+                                            <input id="content_hidden" name="content" type="hidden">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-control-label">实验目的:</label>
+                                            <textarea class="ckeditor" id="experPurpose"></textarea>
+                                            <input id="experPurpose_hidden" name="experPurpose" type="hidden">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-control-label">实验原理:</label>
+                                            <textarea class="ckeditor" id="experTheory"></textarea>
+                                            <input id="experTheory_hidden" name="experTheory" type="hidden">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-control-label">算法参数:</label>
+                                            <textarea class="ckeditor" id="ariParameter"></textarea>
+                                            <input id="ariParameter_hidden" name="ariParameter" type="hidden">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-control-label">算法流程:</label>
+                                            <textarea class="ckeditor" id="ariFlow"></textarea>
+                                            <input id="ariFlow_hidden" name="ariFlow" type="hidden">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row" style="width:95%">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="form-control-label">运行结果:</label>
+                                            <textarea class="ckeditor" id="comResults"></textarea>
+                                            <input id="comResults_hidden" name="comResults" type="hidden">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn btn-success" style="margin-left:10px;" onclick="submitAdd()">提交</button>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="foot"></div>
+        </div>
+    </div>
+</div>
+
+<!-- loading modal -->
+<div class="modal fade" id="alertModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id="modal_message" style="text-align:center"><h2>正在添加中.....</h2></div>
+                <div class="progress progress-striped active">
+                    <div class="progress-bar progress-bar-success" role="progressbar" style="width:100%;">
+                        <span class="sr-only">100% 完成</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/popper.js/popper.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="../js/carbon.js"></script>
+<script src="../js/demo.js"></script>
+
+<script src="../ckeditor/ckeditor.js"></script>
+
+<script>
+    // 加载公共菜单、foot
+    $(function () {
+        $("#publicMenu").load("/admin/publicMenu.html");
+        $("#foot").load("/admin/foot.html");
+
+        // 拉分类（Type）
+        // 这里我用一个“新接口”：/admin-api/types/listAll，避免和你现有的分页接口冲突
+        $.ajax({
+            type: "GET",
+            url: CTX + "/admin-api/types/listAll",
+            success: function (res) {
+                // 兼容两种返回：{total,list} 或直接数组
+                let list = res && res.list ? res.list : (Array.isArray(res) ? res : []);
+                let htm = "";
+                for (let i = 0; i < list.length; i++) {
+                    const it = list[i];
+                    htm += '<input class="mdc-radio__native-control" type="radio" id="t_' + it.id + '" name="tid" value="' + it.id + '">';
+                    htm += '<label for="t_' + it.id + '">' + it.name + '</label>&nbsp;&nbsp;&nbsp;';
+                }
+                $("#bank").html(htm);
+            },
+            error: function () {
+                alert("获取分类失败");
+            }
+        });
+    });
+
+    function backToList() {
+        window.location.href = CTX + "/admin/stContent.html";
+    }
+
+    function submitAdd() {
+        const tid = $("input[name='tid']:checked").val();
+        if (!tid) return alert("请选择分类！");
+        const title = $("#title").val();
+        if (!title) return alert("请输入标题！");
+        const pid = $("#pid").val();
+        if (!pid) return alert("请输入排序！");
+        if (!(/^-?\d+$/.test(pid))) return alert("排序只能整数！");
+        if (parseInt(pid, 10) < 1 || parseInt(pid, 10) > 30) return alert("排序只能是1-30之间！");
+        const codetext = $("#codetext").val();
+        if (!codetext) return alert("请输入源码！");
+
+        // 文件后缀校验（和你 jsp 一样逻辑）
+        const f1 = $("#import_scode").val();
+        if (f1) {
+            const ext1 = f1.substring(f1.lastIndexOf(".") + 1);
+            if (!["exe","EXE","rar","RAR"].includes(ext1)) return alert("程序运行文件或源码下载文件格式不正确");
+        }
+        const f2 = $("#import_sdll").val();
+        if (f2) {
+            const ext2 = f2.substring(f2.lastIndexOf(".") + 1);
+            if (!["rar","RAR","zip","ZIP"].includes(ext2)) return alert("程序运行文件或源码下载文件格式不正确");
+        }
+
+        // CKEditor -> hidden
+        $("#content_hidden").val(CKEDITOR.instances.content.getData());
+        $("#experPurpose_hidden").val(CKEDITOR.instances.experPurpose.getData());
+        $("#experTheory_hidden").val(CKEDITOR.instances.experTheory.getData());
+        $("#ariParameter_hidden").val(CKEDITOR.instances.ariParameter.getData());
+        $("#ariFlow_hidden").val(CKEDITOR.instances.ariFlow.getData());
+        $("#comResults_hidden").val(CKEDITOR.instances.comResults.getData());
+
+        const fd = new FormData(document.getElementById("add_form"));
+        fd.set("tid", tid);
+
+        $("#alertModal").modal("show");
+
+        $.ajax({
+            url: CTX + "/admin-api/contents/create",
+            type: "POST",
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function (data) {
+                setTimeout(() => $("#alertModal").modal("hide"), 300);
+                $("#alertModal").on("hidden.bs.modal", function () {
+                    if (data && data.success) {
+                        alert(data.msg || "添加成功");
+                        backToList();
+                    } else {
+                        alert((data && data.msg) ? data.msg : "添加失败");
+                    }
+                });
+            },
+            error: function (xhr) {
+                setTimeout(() => $("#alertModal").modal("hide"), 300);
+                alert("添加失败：" + (xhr.responseText || xhr.status));
+            }
+        });
+    }
+</script>
+</body>
+</html>

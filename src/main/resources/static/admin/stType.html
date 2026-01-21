@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>分类管理</title>
+
+    <link rel="stylesheet" href="../vendor/simple-line-icons/css/simple-line-icons.css">
+    <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+
+    <link rel="stylesheet" href="../js/bootstrap-table/dist/bootstrap-table.min.css">
+</head>
+
+<body class="sidebar-fixed header-fixed">
+<div class="page-wrapper" style="height: 100%;">
+    <!-- 公共菜单 -->
+    <div id="publicMenu"></div>
+
+    <div class="content" style="height: 100%;">
+        <div class="container-fluid" style="height: 100%;">
+
+            <div class="row">
+                <div class="col-md-12">
+                    <button id="btn_add" type="button" class="btn btn-success" data-toggle="modal"
+                            data-target="#win_add" style="margin-left: 15px;">
+                        新建分类
+                    </button>
+
+                    <button id="btn_delete" onclick="deleteFunction()" type="button"
+                            class="btn btn-danger btn-space" style="margin-left: 10px;">
+                        删除分类
+                    </button>
+                </div>
+            </div>
+
+            <div class="row" style="height: 90%;">
+                <div class="col-md-12">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="mytab"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页脚 -->
+            <div id="foot"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加分类 Modal -->
+<div class="modal fade bs-example-modal-lg" id="win_add" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg" style="max-width:600px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">添加分类</h4>
+            </div>
+            <div class="modal-body">
+                <form id="frm" style="font-size:16px">
+                    <input type="text" id="id" hidden>
+                    <div class="form-group">
+                        <label for="name" class="control-label">分类名:</label>
+                        <input type="text" class="form-control" id="name" name="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="desc" class="control-label">描述:</label>
+                        <textarea class="form-control" id="desc" name="desc" rows="10"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer form-group">
+                <span id="returnMessage" class="glyphicon"></span>
+                <button type="button" data-dismiss="modal" class="btn btn-default">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addFunction()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 修改分类 Modal -->
+<div class="modal fade bs-example-modal-lg" id="win_update" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg" style="max-width:600px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">修改分类</h4>
+            </div>
+            <div class="modal-body">
+                <form id="frm1" style="font-size:16px">
+                    <input type="text" id="id1" name="id" hidden>
+                    <div class="form-group">
+                        <label for="name1" class="control-label">分类名:</label>
+                        <input type="text" class="form-control" id="name1" name="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="desc1" class="control-label">描述:</label>
+                        <textarea class="form-control" id="desc1" name="desc" rows="10"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer form-group">
+                <span id="returnMessage1" class="glyphicon"></span>
+                <button type="button" data-dismiss="modal" class="btn btn-default">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateFunction()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/popper.js/popper.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="../vendor/chart.js/chart.min.js"></script>
+<script src="../js/carbon.js"></script>
+<script src="../js/demo.js"></script>
+
+<script src="../js/bootstrap-table/dist/bootstrap-table.min.js"></script>
+<script src="../js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+
+<!-- 让顶部“账户信息/退出”可用 -->
+<script src="../js/admin-common.js"></script>
+
+<script>
+    // ✅ 统一使用 window.CTX，避免 “CTX 重复声明” 报错
+    window.CTX = window.CTX || "";
+
+    // ✅ 注入公共菜单/页脚（publicMenu.html/foot.html 必须是纯片段，不要带<script>）
+    (function () {
+        fetch("./publicMenu.html")
+            .then(r => r.ok ? r.text() : "")
+            .then(html => { if (html) document.getElementById("publicMenu").innerHTML = html; })
+            .catch(() => {});
+
+        fetch("./foot.html")
+            .then(r => r.ok ? r.text() : "")
+            .then(html => { if (html) document.getElementById("foot").innerHTML = html || ""; })
+            .catch(() => {});
+    })();
+
+    $(function () {
+
+        $('#mytab').bootstrapTable({
+            method: 'post',
+            url: window.CTX + "/admin-api/types/page",
+            striped: true,
+            pagination: true,
+            sidePagination: 'server',
+            cache: false,
+            pageList: [10, 20, 50, 80, 100],
+            pageSize: 10,
+            pageNumber: 1,
+            paginationLoop: true,
+            searchOnEnterKey: true,
+            toolbar: "#toolbar",
+            clickToSelect: true,
+            uniqueId: "id",
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            queryParams: function (params) {
+                return {
+                    limit: params.limit,
+                    offset: params.offset,
+                    order: params.order
+                };
+            },
+            columns: [
+                {
+                    field: "选择",
+                    checkbox: true,
+                    align: 'center',
+                    width: 10,
+                    formatter: function (value, row) {
+                        if (row.state === true) {
+                            return {checked: true};
+                        }
+                        return value;
+                    }
+                },
+                {
+                    title: '分类名称',
+                    width: 60,
+                    align: 'center',
+                    halign: 'center',
+                    field: 'name'
+                },
+                {
+                    title: '分类描述',
+                    width: 160,
+                    align: 'center',
+                    halign: 'center',
+                    field: 'desc'
+                },
+                {
+                    title: '操作',
+                    width: 36,
+                    align: 'center',
+                    halign: 'center',
+                    field: 'id',
+                    formatter: function (value, row, index) {
+                        return ''
+                            + '<a onclick="update_one(' + index + ')" class="form_button btn btn-outline-primary" href="javascript:void(0)">修改</a>'
+                            + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+                            + '<a onclick="delete_one(' + index + ')" class="form_button btn btn-outline-primary" href="javascript:void(0)">删除</a>'
+                            + '<input id="cz_' + index + '" type="hidden" value="' + row.id + '" />';
+                    }
+                }
+            ]
+        });
+
+    });
+
+    // 批量删除
+    function deleteFunction() {
+        var rows = $("#mytab").bootstrapTable('getSelections');
+        if (rows.length === 0) {
+            alert("请选择有效数据");
+            return;
+        }
+
+        var reportsIds = rows.map(r => r.id).join(",") + ",";
+
+        if (confirm("确认删除该分类吗？")) {
+            $.ajax({
+                type: "post",
+                url: window.CTX + "/admin-api/types/delete",
+                data: { ids: rows.map(r => r.id).join(",") },
+                success: function(res){
+                    alert(res.msg || "操作完成");
+                    $("#mytab").bootstrapTable('refresh');
+                },
+                error: function(){ alert("删除失败"); }
+            });
+        }
+    }
+
+    // 添加
+    function addFunction() {
+        var name = $("#name").val();
+        if (!name) { alert("请输入分类名！"); return; }
+
+        var desc = $("#desc").val();
+        if (!desc) { alert("请输入描述！"); return; }
+
+        if (name.length > 30) { alert("分类名不能超过30个字符！"); return; }
+        if (desc.length > 200) { alert("描述不能超过200个字符！"); return; }
+
+        var formData = $('#frm').serialize();
+        $.ajax({
+            type: "post",
+            url: window.CTX + "/admin-api/types/create",
+            cache: false,
+            async: false,
+            data: formData,
+            success: function(res){
+                $('#win_add').modal('hide');
+                alert(res.msg || "添加完成");
+                if(res.success){
+                    $("#mytab").bootstrapTable('refresh');
+                }
+            },
+            error: function () {
+                alert("获取数据失败");
+            }
+        });
+    }
+
+    // 单删
+    function delete_one(index) {
+        var id = $("#cz_" + index).val();
+        if (!id) return;
+
+        if (confirm("确认删除该分类吗？")) {
+            $.ajax({
+                type:"post",
+                url: window.CTX + "/admin-api/types/delete",
+                data: { ids: id },
+                success:function(res){
+                    alert(res.msg || "删除完成");
+                    if(res.success) $("#mytab").bootstrapTable('refresh');
+                }
+            });
+        }
+    }
+
+    // 打开修改弹窗（回填）
+    function update_one(index) {
+        var id = $("#cz_" + index).val();
+        if (!id) return;
+
+        $.ajax({
+            type: "post",
+            url: window.CTX + "/admin-api/types/one",
+            data: { id: id },
+            cache: false,
+            async: false,
+            success: function (data) {
+                var res = (typeof data === "string") ? $.parseJSON(data) : data;
+                if(res.success){
+                    var s = res.data;
+                    $("#id1").val(s.id);
+                    $("#name1").val(s.name || "");
+                    $("#desc1").val(s.desc || "");
+                    $('#win_update').modal('show');
+                } else {
+                    alert(res.msg || "获取数据失败");
+                }
+            },
+            error: function () {
+                alert("获取数据失败");
+            }
+        });
+    }
+
+    // 保存修改
+    function updateFunction() {
+        var name1 = $("#name1").val();
+        if (!name1) { alert("请输入分类名！"); return; }
+
+        var desc1 = $("#desc1").val();
+        if (!desc1) { alert("请输入描述！"); return; }
+
+        if (name1.length > 30) { alert("分类名不能超过30个字符！"); return; }
+        if (desc1.length > 200) { alert("描述不能超过200个字符！"); return; }
+
+        var formData = $('#frm1').serialize();
+        $.ajax({
+            type: "post",
+            url: window.CTX + "/admin-api/types/update",
+            cache: false,
+            async: false,
+            data: formData,
+            success: function (data) {
+                var res = (typeof data === "string") ? $.parseJSON(data) : data;
+                $('#win_update').modal('hide');
+                alert(res.msg || "修改完成");
+                if(res.success){
+                    $("#mytab").bootstrapTable('refresh');
+                }
+            },
+            error: function () {
+                alert("修改数据失败");
+            }
+        });
+    }
+
+    document.addEventListener("click", function(e) {
+        const btn = e.target.closest(".sidebar-toggle");
+        if (!btn) return;
+        e.preventDefault();
+        document.body.classList.toggle("sidebar-hidden");
+    });
+</script>
+</body>
+</html>

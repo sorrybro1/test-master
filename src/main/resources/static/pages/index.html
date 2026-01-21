@@ -38,7 +38,7 @@
 <script type="text/javascript">
     $(function () {
         // 4. 核心：加载导航栏
-        $("#nav-placeholder").load("common/nav.html", function() {
+        $("#nav-placeholder").load("/common/nav.html", function() {
             // 导航栏加载完成后，处理样式（原本 index.jsp 的逻辑）
             var nav_height = $("#nav_id").height();
             $(".bg").css({"margin-top": nav_height + "px"});
@@ -48,7 +48,7 @@
         });
 
         // 加载页脚
-        $("#foot-placeholder").load("common/foot.html");
+        $("#foot-placeholder").load("/common/foot.html");
     });
 
     function selectContent(){

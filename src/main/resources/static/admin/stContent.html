@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>内容管理</title>
+
+    <link rel="stylesheet" href="../vendor/simple-line-icons/css/simple-line-icons.css">
+    <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../js/bootstrap-table/dist/bootstrap-table.min.css">
+</head>
+
+<body class="sidebar-fixed header-fixed">
+<div class="page-wrapper" style="height:100%;">
+    <div id="publicMenu"></div>
+
+    <div class="content" style="height:100%;">
+        <div class="container-fluid" style="height:100%;">
+
+            <div class="row">
+                <div class="col-md-12">
+                    <button id="btn_add" onclick="createFunction()" type="button"
+                            class="btn btn-success btn-space" style="margin-left: 15px;">
+                        添加内容
+                    </button>
+
+                    <button id="btn_delete" onclick="deleteFunction()" type="button"
+                            class="btn btn-danger btn-space" style="margin-left: 10px;">
+                        删除内容
+                    </button>
+
+                    <div class="btn-group" style="margin-left: 20px;">
+                        <input id="Sertitle" placeholder="标题" type="text"
+                               style="float:left;width:150px;margin-right:5px;"
+                               class="form-control">
+
+                        <button id="btn_search" onclick="Search()" type="button"
+                                class="btn btn-primary btn-space">
+                            <span class="fa fa-search" aria-hidden="true"></span> 查询
+                        </button>
+
+                        <button id="btn_reset" onclick="resetSearch()" type="button"
+                                class="btn btn-default btn-space">
+                            <span class="fa fa-eraser" aria-hidden="true"></span> 重置
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="height: 90%;">
+                <div class="col-md-12">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="mytab"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="foot"></div>
+        </div>
+    </div>
+</div>
+
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script src="../vendor/popper.js/popper.min.js"></script>
+<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="../vendor/chart.js/chart.min.js"></script>
+<script src="../js/carbon.js"></script>
+<script src="../js/demo.js"></script>
+
+<script src="../js/bootstrap-table/dist/bootstrap-table.min.js"></script>
+<script src="../js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+
+<!-- 让右上角 “账户管理/退出” 可用 -->
+<script src="../js/admin-common.js"></script>
+
+<script>
+    // 避免 CTX 重复声明
+    window.CTX = window.CTX || "";
+
+    // 加载公共菜单 / 页脚（注意：注入的 script 不会执行，所以公共 js 必须在页面里直接引）
+    (function () {
+        fetch("./publicMenu.html").then(r => r.ok ? r.text() : "").then(html => {
+            if (html) document.getElementById("publicMenu").innerHTML = html;
+        }).catch(() => {});
+
+        fetch("./foot.html").then(r => r.ok ? r.text() : "").then(html => {
+            document.getElementById("foot").innerHTML = html || "";
+        }).catch(() => {});
+    })();
+
+    // 当前查询条件
+    var CURRENT_TITLE = "";
+
+    $(function () {
+        $('#mytab').bootstrapTable({
+            method: 'post',
+            url: window.CTX + "/admin-api/contents/page",
+            striped: true,
+            pagination: true,
+            sidePagination: 'server',
+            cache: false,
+            pageList: [10, 20, 50, 80, 100],
+            pageSize: 10,
+            pageNumber: 1,
+            paginationLoop: true,
+            searchOnEnterKey: true,
+            clickToSelect: true,
+            uniqueId: "id",
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            queryParams: function (params) {
+                return {
+                    limit: params.limit,
+                    offset: params.offset,
+                    title: CURRENT_TITLE
+                };
+            },
+            columns: [
+                {
+                    field: "选择",
+                    checkbox: true,
+                    align: 'center',
+                    width: 10
+                },
+                { title: '标题', width: 60, align: 'center', halign: 'center', field: 'title' },
+                { title: '分类', width: 60, align: 'center', halign: 'center', field: 'tName' },
+                { title: '添加时间', width: 60, align: 'center', halign: 'center', field: 'creat_time' },
+                {
+                    title: '操作',
+                    width: 80,
+                    align: 'center',
+                    halign: 'center',
+                    field: 'id',
+                    formatter: function (value, row, index) {
+                        return ''
+                            + '<a onclick="update_one(' + row.id + ')" class="form_button btn btn-outline-primary" href="javascript:void(0)">修改</a>'
+                            + '&nbsp;&nbsp;'
+                            + '<a onclick="delete_one(' + row.id + ')" class="form_button btn btn-outline-primary" href="javascript:void(0)">删除</a>';
+                    }
+                }
+            ]
+        });
+    });
+
+    // 批量删除
+    function deleteFunction() {
+        var rows = $("#mytab").bootstrapTable('getSelections');
+        if (rows.length === 0) {
+            alert("请选择有效数据");
+            return;
+        }
+        var ids = rows.map(r => r.id).join(",");
+        if (!confirm("确认删除选中的内容吗？")) return;
+
+        $.ajax({
+            type: "post",
+            url: window.CTX + "/admin-api/contents/deleteBatch",
+            data: { ids: ids },
+            success: function (res) {
+                alert(res.msg || "操作完成");
+                $("#mytab").bootstrapTable('refresh');
+            },
+            error: function () {
+                alert("删除失败");
+            }
+        });
+    }
+
+    // 单删
+    function delete_one(id) {
+        if (!confirm("确认删除该内容吗？")) return;
+        $.ajax({
+            type: "post",
+            url: window.CTX + "/admin-api/contents/deleteOne",
+            data: { id: id },
+            success: function (res) {
+                alert(res.msg || "删除完成");
+                $("#mytab").bootstrapTable('refresh');
+            },
+            error: function () {
+                alert("删除失败");
+            }
+        });
+    }
+
+    // 新增：先跳转（下一步我们做 contentAdd.html）
+    function createFunction() {
+        window.location.href = window.CTX + "/admin/AddContent.html";
+    }
+
+    // 修改：先跳转（下一步我们做 contentEdit.html）
+    function update_one(id) {
+        window.location.href = window.CTX + "/admin/contentEdit.html?id=" + encodeURIComponent(id);
+    }
+
+    // 查询
+    function Search() {
+        CURRENT_TITLE = $("#Sertitle").val() || "";
+        $("#mytab").bootstrapTable('refresh', { pageNumber: 1 });
+    }
+
+    // 重置
+    function resetSearch() {
+        CURRENT_TITLE = "";
+        $("#Sertitle").val("");
+        $("#mytab").bootstrapTable('refresh', { pageNumber: 1 });
+    }
+
+    document.addEventListener("click", function(e) {
+        const btn = e.target.closest(".sidebar-toggle");
+        if (!btn) return;
+        e.preventDefault();
+        document.body.classList.toggle("sidebar-hidden");
+    });
+</script>
+</body>
+</html>
