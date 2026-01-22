@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>添加内容</title>
+    <title>修改内容</title>
 
     <link rel="stylesheet" href="../vendor/simple-line-icons/css/simple-line-icons.css">
     <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
     <link rel="stylesheet" href="../css/styles.css">
     <script>
-        // 关键：强制 CKEditor 资源路径从 /ckeditor/ 开始（避免变成 /resources/ckeditor/）
         window.CKEDITOR_BASEPATH = (window.CTX || "") + "/ckeditor/";
     </script>
     <link rel="stylesheet" href="/ckeditor/plugins/jdmath/mathquill-0.10.1/mathquill.css">
@@ -17,7 +16,6 @@
 
 <body class="sidebar-fixed header-fixed">
 <div class="page-wrapper">
-    <!-- 公共菜单 -->
     <div id="publicMenu"></div>
 
     <div class="content">
@@ -34,7 +32,10 @@
                     <div class="card-body">
                         <div class="table-responsive">
 
-                            <form id="add_form" enctype="multipart/form-data">
+                            <form id="edit_form" enctype="multipart/form-data">
+                                <!-- 隐藏字段：内容ID -->
+                                <input type="hidden" id="cid" name="id">
+
                                 <div class="row" style="width:95%">
                                     <div class="col-md-12">
                                         <div class="form-group">
@@ -69,6 +70,7 @@
                                             <label for="import_scode" class="control-label">程序运行EXE上传:</label>
                                             <input type="file" name="import_scode" id="import_scode">
                                             <small>(类型：*.exe/*.EXE 或 *.rar/*.RAR)</small>
+                                            <span id="scodepath" style="margin-left:10px;color:#666;"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -79,6 +81,7 @@
                                             <label for="import_sdll" class="control-label">源码下载RAR上传:</label>
                                             <input type="file" name="import_sdll" id="import_sdll">
                                             <small>(类型：*.rar/*.RAR 或 *.zip/*.ZIP)</small>
+                                            <span id="sdllpath" style="margin-left:10px;color:#666;"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -152,7 +155,7 @@
                                     </div>
                                 </div>
 
-                                <button type="button" class="btn btn-success" style="margin-left:10px;" onclick="submitAdd()">提交</button>
+                                <button type="button" class="btn btn-success" style="margin-left:10px;" onclick="submitUpdate()">提交修改</button>
                             </form>
 
                         </div>
@@ -170,7 +173,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-body">
-                <div id="modal_message" style="text-align:center"><h2>正在添加中.....</h2></div>
+                <div id="modal_message" style="text-align:center"><h2>正在修改中.....</h2></div>
                 <div class="progress progress-striped active">
                     <div class="progress-bar progress-bar-success" role="progressbar" style="width:100%;">
                         <span class="sr-only">100% 完成</span>
@@ -188,38 +191,114 @@
 <script src="../js/demo.js"></script>
 <script src="../js/admin-common.js"></script>
 <script>
-    // 强制 CKEditor 资源路径从 /ckeditor/ 开始
     window.CKEDITOR_BASEPATH = (window.CTX || "") + "/ckeditor/";
 </script>
 <script src="../ckeditor/ckeditor.js"></script>
 
 <script>
-    // 加载公共菜单、foot
+    // 从 URL 获取 id 参数
+    function getUrlParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    // 页面加载
     $(function () {
         $("#publicMenu").load("/admin/publicMenu.html");
         $("#foot").load("/admin/foot.html");
 
-        // 拉分类（Type）
-        // 这里我用一个“新接口”：/admin-api/types/listAll，避免和你现有的分页接口冲突
+        const contentId = getUrlParam('id');
+        if (!contentId) {
+            alert("缺少内容ID参数");
+            backToList();
+            return;
+        }
+
+        // 加载内容详情（包含分类列表）
         $.ajax({
             type: "GET",
-            url: CTX + "/admin-api/types/listAll",
+            url: CTX + "/admin-api/contents/getOne?id=" + contentId,
             success: function (res) {
-                // 兼容两种返回：{total,list} 或直接数组
-                let list = res && res.list ? res.list : (Array.isArray(res) ? res : []);
+                if (!res || !res.success) {
+                    alert(res?.msg || "获取内容失败");
+                    backToList();
+                    return;
+                }
+
+                const data = res.data;       // 内容详情
+                const types = res.types || []; // 分类列表
+
+                // 渲染分类单选框
                 let htm = "";
-                for (let i = 0; i < list.length; i++) {
-                    const it = list[i];
+                for (let i = 0; i < types.length; i++) {
+                    const it = types[i];
                     htm += '<input class="mdc-radio__native-control" type="radio" id="t_' + it.id + '" name="tid" value="' + it.id + '">';
                     htm += '<label for="t_' + it.id + '">' + it.name + '</label>&nbsp;&nbsp;&nbsp;';
                 }
                 $("#bank").html(htm);
+
+                // 填充表单数据
+                $("#cid").val(data.id);
+                $("#title").val(data.title);
+                $("#pid").val(data.pid);
+                $("#codetext").val(data.codetext || "");
+
+                // 选中当前分类
+                $("input[name='tid'][value='" + data.tid + "']").prop('checked', true);
+
+                // 显示已有文件路径
+                if (data.scode) {
+                    $("#scodepath").html("当前文件: " + data.scode);
+                }
+                if (data.sdll) {
+                    $("#sdllpath").html("当前文件: " + data.sdll);
+                }
+
+                // 等待 CKEditor 初始化完成后设置数据
+                waitForCKEditor(function() {
+                    if (CKEDITOR.instances.content) {
+                        CKEDITOR.instances.content.setData(data.content || "");
+                    }
+                    if (CKEDITOR.instances.experPurpose) {
+                        CKEDITOR.instances.experPurpose.setData(data.experPurpose || "");
+                    }
+                    if (CKEDITOR.instances.experTheory) {
+                        CKEDITOR.instances.experTheory.setData(data.experTheory || "");
+                    }
+                    if (CKEDITOR.instances.ariParameter) {
+                        CKEDITOR.instances.ariParameter.setData(data.ariParameter || "");
+                    }
+                    if (CKEDITOR.instances.ariFlow) {
+                        CKEDITOR.instances.ariFlow.setData(data.ariFlow || "");
+                    }
+                    if (CKEDITOR.instances.comResults) {
+                        CKEDITOR.instances.comResults.setData(data.comResults || "");
+                    }
+                });
             },
             error: function () {
-                alert("获取分类失败");
+                alert("获取数据失败");
+                backToList();
             }
         });
     });
+
+    // 等待 CKEditor 实例就绪
+    function waitForCKEditor(callback) {
+        const checkInterval = setInterval(function() {
+            if (CKEDITOR.instances.content &&
+                CKEDITOR.instances.content.status === 'ready') {
+                clearInterval(checkInterval);
+                callback();
+            }
+        }, 100);
+
+        // 超时保护：5秒后强制执行
+        setTimeout(function() {
+            clearInterval(checkInterval);
+            callback();
+        }, 5000);
+    }
 
     function backToList() {
         window.location.href = CTX + "/admin/stContent.html";
@@ -232,29 +311,78 @@
         return "";
     }
 
-    function submitAdd() {
+    function submitUpdate() {
         const fd = new FormData();
 
-        // 普通 input
-        const tidVal = $("input[name='tid']:checked").val();
-        if (!tidVal) {
-            alert("请选择分类（tid不能为空）");
+        // 内容ID
+        const cid = $("#cid").val();
+        if (!cid) {
+            alert("内容ID不能为空");
             return;
         }
+        fd.append("id", cid);
 
+        // 分类
+        const tidVal = $("input[name='tid']:checked").val();
         if (!tidVal || isNaN(Number(tidVal))) {
             alert("请选择分类（tid不能为空）");
             return;
         }
         fd.append("tid", tidVal);
 
-        fd.append("pid", $("#pid").val() || "");
-        fd.append("title", $("#title").val() || "");
+        // 标题
+        const title = $("#title").val();
+        if (!title || title.trim() === "") {
+            alert("请输入标题");
+            return;
+        }
+        fd.append("title", title);
 
-        // 你源码框如果不是 CKEditor，就保持用 textarea 的值
-        fd.append("codetext", $("#codetext").val() || "");
+        // 排序
+        const pid = $("#pid").val();
+        if (!pid || pid === "") {
+            alert("请输入排序");
+            return;
+        }
+        if (!/^-?\d+$/.test(pid)) {
+            alert("排序只能是整数");
+            return;
+        }
+        if (pid < 1 || pid > 30) {
+            alert("排序只能是1-30之间");
+            return;
+        }
+        fd.append("pid", pid);
 
-        //  6 个 CKEditor
+        // 验证程序运行文件格式
+        const imgPath4 = $('#import_scode').val();
+        if (imgPath4 !== '') {
+            const strExtension = imgPath4.substr(imgPath4.lastIndexOf('.') + 1).toLowerCase();
+            if (strExtension !== 'exe' && strExtension !== 'rar') {
+                alert('程序运行文件格式不正确，只支持 exe/rar');
+                return;
+            }
+        }
+
+        // 验证源码下载文件格式
+        const imgPath3 = $('#import_sdll').val();
+        if (imgPath3 !== '') {
+            const strExtension1 = imgPath3.substr(imgPath3.lastIndexOf('.') + 1).toLowerCase();
+            if (strExtension1 !== 'rar' && strExtension1 !== 'zip') {
+                alert('源码下载文件格式不正确，只支持 rar/zip');
+                return;
+            }
+        }
+
+        // 源码
+        const codetext = $("#codetext").val();
+        if (!codetext || codetext.trim() === "") {
+            alert("请输入源码");
+            return;
+        }
+        fd.append("codetext", codetext);
+
+        // 6 个 CKEditor 字段
         fd.append("content", getCk("content"));
         fd.append("experPurpose", getCk("experPurpose"));
         fd.append("experTheory", getCk("experTheory"));
@@ -262,35 +390,47 @@
         fd.append("ariFlow", getCk("ariFlow"));
         fd.append("comResults", getCk("comResults"));
 
-        // 文件：只有选了才 append（避免 multipart 解析炸）
+        // 文件：只有选了才 append
         const scodeFile = document.getElementById("import_scode")?.files?.[0];
         if (scodeFile) fd.append("import_scode", scodeFile);
 
         const sdllFile = document.getElementById("import_sdll")?.files?.[0];
         if (sdllFile) fd.append("import_sdll", sdllFile);
 
+        // 显示加载中
+        $('#alertModal').modal("show");
+
         $.ajax({
-            url: CTX + "/admin-api/contents/create",
+            url: CTX + "/admin-api/contents/update",
             type: "POST",
             data: fd,
             processData: false,
             contentType: false,
             success: function(res) {
-                if (res && res.success) {
-                    alert("提交成功");
-                    window.location.href = CTX + "/admin/stContent.html";
-                } else {
-                    alert(res?.msg || "提交失败");
-                }
+                setTimeout(function() {
+                    $('#alertModal').modal('hide');
+                }, 500);
+
+                $('#alertModal').on('hidden.bs.modal', function () {
+                    if (res && res.success) {
+                        alert(res.msg || "修改成功");
+                        window.location.href = CTX + "/admin/stContent.html";
+                    } else {
+                        alert(res?.msg || "修改失败");
+                    }
+                    // 移除事件，避免重复绑定
+                    $('#alertModal').off('hidden.bs.modal');
+                });
             },
             error: function(xhr) {
-                alert("提交失败：" + (xhr.responseText || xhr.status));
+                $('#alertModal').modal('hide');
+                alert("修改失败：" + (xhr.responseText || xhr.status));
                 console.log(xhr);
             }
         });
     }
 
-        document.addEventListener("click", function(e) {
+    document.addEventListener("click", function(e) {
         const btn = e.target.closest(".sidebar-toggle");
         if (!btn) return;
         e.preventDefault();

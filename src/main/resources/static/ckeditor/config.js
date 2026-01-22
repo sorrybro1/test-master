@@ -43,5 +43,10 @@ CKEDITOR.editorConfig = function( config ) {
 		config.filebrowserImageUploadUrl = "../image/imageUpload.do";
 		config.filebrowserUploadUrl ="../image/filesUpload.do";
 		
-		/*CKEDITOR.*/config.contentsCss = '../resources/ckeditor/plugins/jdmath/mathquill-0.10.1/mathquill.css';
+		/*CKEDITOR.*/config.contentsCss = '../plugins/jdmath/mathquill-0.10.1/mathquill.css';
+
+        CKEDITOR.editorConfig = function( config ) {
+            config.filebrowserImageUploadUrl = '/admin-api/uploads/image';
+            config.filebrowserUploadUrl = '/admin-api/uploads/file'; // 可选
+        };
 };

@@ -23,6 +23,35 @@ public class AdminTypeController {
     }
 
     /**
+     * 给 AddContent.html 用：一次性返回全部分类
+     * GET /admin-api/types/listAll
+     * 返回：{ total, list }（你前端就是按 res.list 取的）
+     */
+    @GetMapping("/listAll")
+    public Map<String, Object> listAll(
+            @RequestParam(value = "name", required = false) String name,
+            HttpSession session
+    ) {
+        if (!isAdminLoggedIn(session)) {
+            return Map.of("total", 0, "list", List.of());
+        }
+
+        QueryWrapper<Type> qw = new QueryWrapper<>();
+        if (name != null && !name.trim().isEmpty()) {
+            qw.like("name", name.trim());
+        }
+        // 你 page() 里是 orderByDesc("id")，这里保持一致
+        qw.orderByDesc("id");
+
+        List<Type> list = typeMapper.selectList(qw);
+
+        Map<String, Object> out = new HashMap<>();
+        out.put("total", list.size());
+        out.put("list", list);
+        return out;
+    }
+
+    /**
      * bootstrap-table 服务端分页
      * 入参：limit, offset
      * 返回：{total, rows}
@@ -68,7 +97,6 @@ public class AdminTypeController {
     public Map<String, Object> create(
             @RequestParam("name") String name,
             @RequestParam("desc") String desc,
-            // 你页面没填 type 的话，就默认给个 1（你也可以改成固定值）
             @RequestParam(value = "type", required = false) String type,
             HttpSession session
     ) {
@@ -83,7 +111,6 @@ public class AdminTypeController {
         if (n.length() > 30) return Map.of("success", false, "msg", "分类名不能超过30个字符");
         if (d.length() > 200) return Map.of("success", false, "msg", "描述不能超过200个字符");
 
-        // 可选：不允许重名（你想允许就删掉这段）
         Long cnt = typeMapper.selectCount(new QueryWrapper<Type>().eq("name", n));
         if (cnt != null && cnt > 0) {
             return Map.of("success", false, "msg", "分类名已存在");

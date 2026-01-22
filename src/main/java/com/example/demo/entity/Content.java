@@ -30,6 +30,8 @@ public class Content {
     private String sdll;// 程序运行文件地址
     @TableField("creat_time")
     private String creat_time;
+    @TableField("uid")
+    private String uid;
     private String objective;
     private String type;
     @TableField(exist = false)
@@ -44,7 +46,7 @@ public class Content {
     private String ariFlow;
     @TableField("comResults")
     private String comResults;
-    private String uid;
+
 
     // 2) 对外 JSON 字段：解码后的字符串（前端仍然用 data.codetext/data.content）
     @JsonProperty("codetext")

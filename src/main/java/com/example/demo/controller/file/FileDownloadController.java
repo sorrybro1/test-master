@@ -47,7 +47,7 @@ public class FileDownloadController {
     }
 
     /**
-     * 获取文件信息（测试用）
+     * 获取文件信息
      */
     @GetMapping("/info/{contentId}")
     public ResponseEntity<Content> getFileInfo(@PathVariable Integer contentId) {
@@ -103,14 +103,20 @@ public class FileDownloadController {
                         .build();
             }
 
+
             // 3. 处理文件路径
-            // 如果是相对路径，加上基础路径
-            if (!isAbsolutePath(filePath)) {
-                filePath = uploadDir + File.separator + filePath;
+            // 数据库存的是 URL 路径：/uploads/xxx，必须映射到磁盘 uploads 目录
+            if (filePath.startsWith("/uploads/")) {
+                // 去掉开头的 "/uploads/"
+                String relative = filePath.substring("/uploads/".length()); // e.g. "program/xxx.zip"
+                filePath = Paths.get(uploadDir, relative).toString();       // e.g. "uploads/program/xxx.zip"
+            } else if (!isAbsolutePath(filePath)) {
+                // 普通相对路径
+                filePath = Paths.get(uploadDir, filePath).toString();
             }
 
             // 4. 构建文件资源
-            Path path = Paths.get(filePath).normalize();
+            Path path = Paths.get(filePath).toAbsolutePath().normalize();
             Resource resource = new UrlResource(path.toUri());
 
             // 5. 检查文件是否存在
