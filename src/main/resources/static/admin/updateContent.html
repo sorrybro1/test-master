@@ -358,8 +358,8 @@
         const imgPath4 = $('#import_scode').val();
         if (imgPath4 !== '') {
             const strExtension = imgPath4.substr(imgPath4.lastIndexOf('.') + 1).toLowerCase();
-            if (strExtension !== 'exe' && strExtension !== 'rar') {
-                alert('程序运行文件格式不正确，只支持 exe/rar');
+            if (strExtension !== 'exe' && strExtension !== 'rar'&&strExtension !== 'rar' && strExtension !== 'zip') {
+                alert('程序运行文件格式不正确，只支持 exe/rar/zip/rar');
                 return;
             }
         }
