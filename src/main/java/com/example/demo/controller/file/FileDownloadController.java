@@ -2,7 +2,9 @@ package com.example.demo.controller.file;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.demo.entity.Content;
+import com.example.demo.entity.StRole;
 import com.example.demo.mapper.ContentMapper;
+import com.example.demo.mapper.StRoleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -23,6 +25,7 @@ import java.nio.file.Paths;
 public class FileDownloadController {
 
     private final ContentMapper contentMapper;
+    private final StRoleMapper stRoleMapper;
 
     // 文件存储基础路径，如果没有配置默认使用 uploads 目录
     @Value("${file.upload-dir:uploads}")
@@ -95,6 +98,13 @@ public class FileDownloadController {
                 return ResponseEntity.notFound().build();
             }
 
+            // 1.5 下载权限校验（st_role.enabled：1允许 2不允许；没配置默认允许）
+            if (!isDownloadAllowed(contentId)) {
+                return ResponseEntity.status(403)
+                        .header("X-Error-Message", "该实验未开放下载权限")
+                        .build();
+            }
+
             // 2. 获取文件路径
             String filePath = isScode ? content.getScode() : content.getSdll();
             if (filePath == null || filePath.trim().isEmpty()) {
@@ -155,6 +165,23 @@ public class FileDownloadController {
             return ResponseEntity.internalServerError()
                     .header("X-Error-Message", "服务器内部错误: " + e.getMessage())
                     .build();
+        }
+    }
+
+    /**
+     * st_role 表控制下载权限：enabled=2 时禁止下载。
+     * 这里按 contentId -> conuid 直接匹配（conuid 存的是 st_content.id）。
+     */
+    private boolean isDownloadAllowed(Integer contentId) {
+        try {
+            LambdaQueryWrapper<StRole> qw = new LambdaQueryWrapper<StRole>()
+                    .eq(StRole::getConuid, String.valueOf(contentId))
+                    .last("LIMIT 1");
+            StRole r = stRoleMapper.selectOne(qw);
+            return r == null || r.getEnabled() == null || !"2".equals(r.getEnabled().trim());
+        } catch (Exception e) {
+            // 权限表异常时，为了不影响系统可用性，这里默认放行（你也可以改成默认拒绝）
+            return true;
         }
     }
 

@@ -115,7 +115,7 @@ public class AdminContentController {
             String programPath = saveToSubDir(programFile, "program");
             String codePath = saveToSubDir(codeFile, "code");
             param.put("scode", codePath); // 源码下载
-            param.put("sdll", programPath);  // 程序运行
+            param.put("sdll", programPath); // 程序运行
         } catch (IOException e) {
             return Map.of("success", false, "msg", "文件保存失败：" + e.getMessage());
         }

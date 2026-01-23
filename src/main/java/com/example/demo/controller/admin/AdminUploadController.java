@@ -70,7 +70,7 @@ public class AdminUploadController {
     }
 
     /**
-     * 可选：通用文件上传（如果以后需要 CKEditor 插入附件）
+     * 通用文件上传（如果以后需要 CKEditor 插入附件）
      */
     @PostMapping(value = "/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Map<String, Object> uploadFile(

@@ -128,7 +128,7 @@ public class AdminContentEditController {
 
     private static final SecureRandom RNG = new SecureRandom();
 
-    // ✅ 复用你 create() 的保存风格：存到 uploadDir/subDir，并返回 /uploads/subDir/xxx
+    // 复用 create（）：存到 uploadDir/subDir，并返回 /uploads/subDir/xxx
     private String saveToSubDir(MultipartFile file, String subDir) throws IOException {
         if (file == null || file.isEmpty()) return null;
 
