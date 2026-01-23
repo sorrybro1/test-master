@@ -1,5 +1,5 @@
 package com.example.demo.controller.file;
-
+//admin
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.demo.entity.Content;
 import com.example.demo.entity.StRole;

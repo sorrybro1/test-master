@@ -116,7 +116,7 @@
         fetch("./publicMenu.html")
             .then(r => r.ok ? r.text() : "")
             .then(html => {
-                if (!html) return;
+                if (!html) return;//admin
 
                 const container = document.getElementById("publicMenu");
 

@@ -1,5 +1,5 @@
 package com.example.demo.controller.classification;
-
+//admin
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.demo.entity.Classification;
 import com.example.demo.mapper.ClassificationMapper;

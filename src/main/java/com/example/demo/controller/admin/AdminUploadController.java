@@ -1,5 +1,5 @@
 package com.example.demo.controller.admin;
-
+//admin
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;

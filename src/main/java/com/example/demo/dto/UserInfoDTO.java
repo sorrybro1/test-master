@@ -1,6 +1,6 @@
 // src/main/java/com/experiment/dto/UserInfoDTO.java
 package com.example.demo.dto;
-
+//admin
 import lombok.Data;
 
 @Data
