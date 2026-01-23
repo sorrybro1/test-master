@@ -243,15 +243,15 @@
                 $("#pid").val(data.pid);
                 $("#codetext").val(data.codetext || "");
 
-                // 选中当前分类
+                // 选中 当前分类
                 $("input[name='tid'][value='" + data.tid + "']").prop('checked', true);
 
-                // 显示已有文件路径
-                if (data.scode) {
-                    $("#scodepath").html("当前文件: " + data.scode);
-                }
+                // 显示已有文件路径（注意：sdll=程序运行，scode=源码下载）
                 if (data.sdll) {
-                    $("#sdllpath").html("当前文件: " + data.sdll);
+                    $("#scodepath").html("当前文件: " + data.sdll); // 程序运行EXE上传下面显示 sdll
+                }
+                if (data.scode) {
+                    $("#sdllpath").html("当前文件: " + data.scode); // 源码下载RAR上传下面显示 scode
                 }
 
                 // 等待 CKEditor 初始化完成后设置数据

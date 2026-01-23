@@ -158,12 +158,13 @@
             clickToSelect: true,
             uniqueId: "id",
             contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-            queryParams: function (params) {
-                return {
-                    limit: params.limit,
-                    offset: params.offset,
-                    order: params.order
-                };
+                queryParams: function (params) {
+                    return {
+                        limit: params.limit,
+                        offset: params.offset,
+                        order: params.order,
+                        name: $("#name").val() // 页面里 “分类名输入框”的id如果不是name就改成实际id
+                    };
             },
             columns: [
                 {

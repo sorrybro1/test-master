@@ -1,5 +1,5 @@
 package com.example.demo.controller.admin;
-
+//admin
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.entity.Type;
@@ -78,7 +78,12 @@ public class AdminTypeController {
         Page<Type> res = typeMapper.selectPage(page, qw);
 
         Map<String, Object> out = new HashMap<>();
-        out.put("total", res.getTotal());
+        long total = res.getTotal();
+        if (total == 0) {
+            Long cnt = typeMapper.selectCount(qw);
+            total = (cnt == null ? 0 : cnt);
+        }
+        out.put("total", total);
         out.put("rows", res.getRecords());
         return out;
     }
