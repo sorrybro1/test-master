@@ -2,7 +2,7 @@
 // Source code recreated from a .class file by IntelliJ IDEA
 // (powered by Fernflower decompiler)
 //
-
+//admin
 package com.example.demo.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;

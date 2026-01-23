@@ -1,5 +1,5 @@
 package com.example.demo.controller.Auth;
-
+//admin
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.demo.dto.LoginRequest;

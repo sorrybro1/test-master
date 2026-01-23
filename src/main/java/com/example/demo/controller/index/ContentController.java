@@ -1,5 +1,5 @@
 package com.example.demo.controller.index;
-
+//admin
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.demo.entity.Content;
 import com.example.demo.mapper.ContentMapper;

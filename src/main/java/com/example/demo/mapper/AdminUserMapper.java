@@ -1,5 +1,5 @@
 package com.example.demo.mapper;
-
+//admin
 import com.example.demo.entity.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

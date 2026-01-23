@@ -1,3 +1,4 @@
+//admin
 package com.example.demo.controller.admin;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;

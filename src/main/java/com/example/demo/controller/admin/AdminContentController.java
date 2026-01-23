@@ -1,5 +1,5 @@
 package com.example.demo.controller.admin;
-
+//admin
 import com.example.demo.mapper.ContentMapper;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;

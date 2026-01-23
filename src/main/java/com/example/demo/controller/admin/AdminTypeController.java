@@ -1,5 +1,5 @@
 package com.example.demo.controller.admin;
-
+//admin
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.entity.Type;

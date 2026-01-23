@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+//config
 import com.example.demo.interceptor.AdminLoginInterceptor;
 import com.example.demo.interceptor.LoginInterceptor;
 import org.springframework.context.annotation.Configuration;

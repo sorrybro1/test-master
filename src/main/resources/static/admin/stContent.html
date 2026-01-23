@@ -81,7 +81,7 @@
     // 避免 CTX 重复声明
     window.CTX = window.CTX || "";
 
-    // 加载公共菜单 / 页脚（注意：注入的 script 不会执行，所以公共 js 必须在页面里直接引）
+    // 加载公共菜单 / 页脚（注意：注入的  script 不会执行，所以公共 js 必须在页面里直接引）
     (function () {
         fetch("./publicMenu.html").then(r => r.ok ? r.text() : "").then(html => {
             if (html) document.getElementById("publicMenu").innerHTML = html;

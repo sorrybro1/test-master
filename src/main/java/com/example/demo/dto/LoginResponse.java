@@ -1,6 +1,6 @@
 // src/main/java/com/experiment/dto/LoginResponse.java
 package com.example.demo.dto;
-
+//admin
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
