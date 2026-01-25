@@ -42,7 +42,7 @@
         <ul class="nav navbar-nav navbar-right" style="position:absolute; right:15px; top:0px;">
             <li>
                 <!-- 关键：要 return 才能阻止默认跳转 -->
-                <a href="/api/auth/logout" onclick="return logoutAndRedirect()">
+                <a  onclick="logoutAndRedirect()">
                     <span class="glyphicon glyphicon-log-out"></span> 退出
                 </a>
             </li>
@@ -72,9 +72,9 @@
                 <ul class="nav nav-tabs nav-stacked" style="text-align:center;">
                     <li><div class="panel-heading">管理菜单</div></li>
                     <li class="active"><a href="/user/userManagement.html">用户管理</a></li>
-                    <li><a href="/curriculum/courseManagement.do">课程管理</a></li>
+                    <li><a id="menu_course_mgmt" href="/user/courseStudent.html">课程管理</a></li>
                     <li id="menu_create_course" style="display:none;">
-                        <a href="/ContentCtr/toStContent.do">创建课程</a>
+                        <a href="stContent.html">创建课程</a>
                     </li>
                 </ul>
             </div>
@@ -207,7 +207,20 @@
     }
 
     function logoutAndRedirect(){
-        return true;
+        $.ajax({
+            type: "post",
+            url: CTX + "/api/auth/logout",
+            cache: false,
+            // 用 complete，确保后端返回啥都能跳（包括重定向/HTML/空响应）
+            complete: function () {
+                window.location.href = CTX + "/pages/login.html";
+            }
+        });
+
+        $.ajax({
+
+        })
+        return false;
     }
 
     function getNavigation(){
@@ -265,6 +278,15 @@
                 // role==2 显示创建课程
                 if (String(user.role) === "2") $("#menu_create_course").show();
                 else $("#menu_create_course").hide();
+                // role==2 时，课程管理跳 /user/courseManagement；否则保持原来的 /user/courseStudent.html
+                if (String(user.role) === "2") {
+                    console.log("用户角色为2，课程管理跳转到 courseManagement");
+                    $("#menu_course_mgmt").attr("href", CTX + "/user/courseManagement.html");
+                } else {
+                    console.log("用户角色非2，课程管理跳转到 courseStudent");
+                    $("#menu_course_mgmt").attr("href", CTX + "/user/courseStudent.html");
+                }
+
 
                 // 右侧表单
                 $("#username").val(user.username || '');

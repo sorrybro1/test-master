@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>课程管理</title>
+  <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-table/1.18.3/bootstrap-table.min.css" rel="stylesheet">
+
+  <style>
+    body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #fff; }
+
+    /* 页面布局容器 */
+    .page-wrapper { margin-top: 70px; } /* 初始值，nav_per.html 加载后会修正 */
+
+    /* 右侧内容面板样式 */
+    .content-panel {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 1px 1px rgba(0,0,0,.05);
+      background: #fff;
+      min-height: 500px;
+    }
+    .content-heading {
+      background-color: #f9f9f9;
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+      color: #333;
+      font-size: 14px;
+    }
+    .content-body { padding: 15px; }
+
+    /* 表格样式微调 - 垂直居中 */
+    .table > thead > tr > th {
+      border-bottom-width: 1px;
+      font-weight: bold;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+    .table > tbody > tr > td {
+      text-align: center;
+      vertical-align: middle;
+      font-size: 13px;
+      color: #333;
+    }
+
+    /* 上传区域布局 */
+    .upload-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .upload-row input[type="file"] {
+      border: 1px solid #ccc;
+      padding: 2px;
+      border-radius: 3px;
+      font-size: 12px;
+      max-width: 200px;
+    }
+    .btn-submit {
+      margin-left: 10px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      color: #333;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .btn-submit:hover { background-color: #e6e6e6; }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid page-wrapper">
+  <div class="row">
+    <div id="nav-placeholder"></div>
+
+    <div class="col-xs-10">
+      <div class="content-panel">
+        <div class="content-heading">课程管理</div>
+
+        <div class="content-body">
+          <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <select id="semester" class="form-control" style="width: 160px; height: 34px;">
+            </select>
+          </div>
+
+          <form id="uploadForm">
+            <table id="courseTable" class="table table-bordered table-hover"></table>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-table/1.18.3/bootstrap-table.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-table/1.18.3/locale/bootstrap-table-zh-CN.min.js"></script>
+<!--script src="https://cdn.bootcdn.net/ajax/libs/jquery.form/4.3.0/jquery.form.min.js"></script-->
+
+<script type="text/javascript">
+  $(function () {
+    // 1. 加载公共导航与侧边栏
+    $("#nav-placeholder").load("../common/nav_per.html");
+
+    // 2. 初始化页面数据
+    getStdentSemester();
+    getCourseStudentList();
+
+    // 监听学期变化
+    $("#semester").change(function(){
+      $('#courseTable').bootstrapTable('refresh', {
+        url : "/curriculum/courseStudentList.do?semester="+encodeURI($("#semester").val())
+      });
+    });
+  });
+
+  // 获取学期列表
+  function getStdentSemester() {
+    $.ajax({
+      type: "post",
+      url: "/curriculum/getStdentSemester.do",
+      success:function(data){
+        // 假设返回 <option>HTML 或 JSON
+        $("#semester").html(data);
+      },
+      error: function() {
+        // 兜底数据
+        $("#semester").html('<option>2025秋季学期</option>');
+      }
+    });
+  }
+
+  // 初始化表格
+  function getCourseStudentList() {
+    $('#courseTable').bootstrapTable({
+      method: 'post',
+      url: "/curriculum/courseStudentList.do",
+      dataType: "json",
+      pagination: true,
+      sidePagination: 'server',
+      pageList: [10, 20, 50],
+      pageSize: 10,
+      pageNumber: 1,
+      striped: false,
+      columns: [
+        {
+          title: '序号',
+          align: 'center',
+          width: 50,
+          formatter: function (value, row, index) {
+            return index + 1;
+          }
+        },
+        {
+          title: '实验项目',
+          field: 'cnameUrl',
+          align: 'left',
+          formatter: function(value) {
+            return '<a href="#" style="color:#337ab7; text-decoration:none;">' + value + '</a>';
+          }
+        },
+        {
+          title: '上传实验报告（支持pdf, doc, docx, zip, rar, 7z格式，重新上传将被覆盖）',
+          field: 'scoId',
+          align: 'center',
+          width: 450,
+          formatter: function(value, row, index) {
+            // 还原截图中的上传布局
+            return '<div class="upload-row">' +
+                    '<input type="file" id="file_'+index+'" name="upload_file'+index+'">' +
+                    '<button type="button" class="btn-submit" onclick="uploadReport('+index+')">提交</button>' +
+                    '</div>';
+          }
+        },
+        {
+          title: '提交状态',
+          field: 'uploadFileName',
+          align: 'center',
+          width: 100,
+          formatter: function(value) {
+            return (value && value !== "") ? "已提交" : "未提交";
+          }
+        },
+        {
+          title: '提交报告截止时间',
+          field: 'cEndingtime',
+          align: 'center',
+          width: 150,
+          formatter: function(value) {
+            return value || "-";
+          }
+        }
+      ],
+      // 失败时的 Mock 数据，确保看到效果
+      onLoadError: function() {
+        $('#courseTable').bootstrapTable('load', [{
+          sco_id: 1,
+          cname_url: "(8) 标识密码算法的密钥管理系统讲解实训",
+          upload_file_name: null,
+          c_endingtime: null
+        }]);
+      }
+    });
+  }
+
+  // 上传逻辑
+  function uploadReport(index) {
+    // 1. 获取文件对象
+    var fileInput = $("#file_" + index);
+    var fileObj = fileInput[0].files[0];
+
+    if (!fileObj) {
+      alert("请选择文件");
+      return;
+    }
+
+    // 2. 前端校验后缀 (虽然后端也校验，但前端先拦一道体验更好)
+    var fileName = fileInput.val();
+    var ext = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+    var allowed = ['pdf', 'doc', 'docx', 'zip', 'rar', '7z'];
+
+    if ($.inArray(ext, allowed) === -1) {
+      alert('格式不支持，请选择: ' + allowed.join(', '));
+      return;
+    }
+
+    // 3. 获取行数据 (为了拿到 sco_id)
+    var row = $('#courseTable').bootstrapTable('getData')[index];
+    if (!row || !row.scoId) { // 注意：这里的 sco_id 大小写要根据你 list 接口返回的 json key 保持一致
+      alert("无法获取课程ID");
+      return;
+    }
+
+    // 4. 构建 FormData
+    var formData = new FormData();
+    // 对应后端 @RequestParam("sco_id")
+    formData.append('sco_id', row.scoId);
+    // 对应后端 @RequestParam("file") - 统一叫 "file"，不管第几行
+    formData.append('file', fileObj);
+
+    // 5. 发送 AJAX 请求
+    $.ajax({
+      url: "/curriculum/uploadReport.do", // 现在的 URL 不需要拼参数了，都在 formData 里
+      type: 'POST',
+      data: formData,
+      processData: false, // 必须 false: 告诉jQuery不要处理数据
+      contentType: false, // 必须 false: 告诉jQuery不要设置Content-Type
+      dataType: 'json',
+      success: function(data) {
+        if(data.msg && data.msg.indexOf("成功") !== -1) {
+          alert(data.msg);
+          $('#courseTable').bootstrapTable('refresh'); // 刷新表格更新状态
+        } else {
+          alert("提示: " + (data.msg || "未知错误"));
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error(error);
+        alert("上传请求失败，请检查网络或登录状态");
+      }
+    });
+  }
+</script>
+</body>
+</html>

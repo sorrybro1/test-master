@@ -1,0 +1,336 @@
+<!--<style>-->
+<!--  /* -&#45;&#45; 1. 顶部导航栏样式 (参考截图：黑色背景) -&#45;&#45; */-->
+<!--  .navbar-inverse { background-color: #000; border-color: #000; }-->
+<!--  .navbar-inverse .navbar-nav > li > a { color: #fff; font-size: 14px; padding: 15px 12px; }-->
+<!--  .navbar-inverse .navbar-nav > li > a:hover,-->
+<!--  .navbar-inverse .navbar-nav > li > a:focus { color: #ccc; background-color: #333; }-->
+<!--  .navbar-right { margin-right: 0; }-->
+
+<!--  /* -&#45;&#45; 2. 左侧侧边栏样式 (参考截图：卡片风格) -&#45;&#45; */-->
+<!--  .sidebar-box {-->
+<!--    border: 1px solid #ddd;-->
+<!--    border-radius: 4px;-->
+<!--    margin-bottom: 20px;-->
+<!--    background: #fff;-->
+<!--    box-shadow: 0 1px 1px rgba(0,0,0,.05);-->
+<!--  }-->
+<!--  .sidebar-header {-->
+<!--    padding: 10px 15px;-->
+<!--    border-bottom: 1px solid #ddd;-->
+<!--    text-align: center;-->
+<!--    background-color: #fff; /* 截图看起来头部是白的 */-->
+<!--    font-size: 14px;-->
+<!--    color: #333;-->
+<!--    font-weight: normal;-->
+<!--  }-->
+<!--  .sidebar-body { padding: 15px; font-size: 13px; }-->
+
+<!--  .sidebar-nav { padding: 0; list-style: none; margin: 0; }-->
+<!--  .sidebar-nav li { border-top: 1px solid #ddd; }-->
+<!--  .sidebar-nav li:first-child { border-top: none; }-->
+<!--  .sidebar-nav li a { display: block; padding: 10px 15px; color: #333; text-decoration: none; text-align: center; font-size: 14px; }-->
+<!--  .sidebar-nav li a:hover { background-color: #f5f5f5; }-->
+<!--  /* 激活状态模拟 */-->
+<!--  .sidebar-nav li a.active { background-color: #eee; font-weight: bold; }-->
+<!--</style>-->
+
+<!--<nav id="nav_id" class="navbar navbar-inverse navbar-fixed-top" role="navigation">-->
+<!--  <div class="container-fluid">-->
+<!--    <ul id="daohang" class="nav navbar-nav">-->
+<!--    </ul>-->
+
+<!--    <ul class="nav navbar-nav navbar-right" style="padding-right: 15px;">-->
+<!--      <li><a href="#" onclick="logoutAndRedirect()"><span class="glyphicon glyphicon-log-out"></span> 退出</a></li>-->
+<!--    </ul>-->
+<!--  </div>-->
+<!--</nav>-->
+
+<!--<div class="col-xs-2" style="padding-left: 0;">-->
+<!--  <div class="sidebar-box">-->
+<!--    <div class="sidebar-header">当前用户</div>-->
+<!--    <div class="sidebar-body">-->
+<!--      <table style="width: 100%;">-->
+<!--        <tr>-->
+<!--          <td style="text-align: right; width: 45%; color: #666; padding-bottom: 5px;">姓名：</td>-->
+<!--          <td id="u_name" style="padding-bottom: 5px;"></td>-->
+<!--        </tr>-->
+<!--        <tr>-->
+<!--          <td style="text-align: right; color: #666; padding-bottom: 5px;">编号：</td>-->
+<!--          <td id="u_username" style="padding-bottom: 5px;"></td>-->
+<!--        </tr>-->
+<!--        <tr>-->
+<!--          <td style="text-align: right; color: #666;">部门：</td>-->
+<!--          <td id="u_college"></td>-->
+<!--        </tr>-->
+<!--      </table>-->
+<!--    </div>-->
+<!--  </div>-->
+
+<!--  <div class="sidebar-box">-->
+<!--    <div class="sidebar-header">管理菜单</div>-->
+<!--    <ul class="sidebar-nav">-->
+<!--      <li><a href="../user/userManagement.html">用户管理</a></li>-->
+<!--      <li><a href="../user/courseStudent.html" class="active">课程管理</a></li>-->
+<!--    </ul>-->
+<!--  </div>-->
+<!--</div>-->
+
+<!--<script type="text/javascript">-->
+<!--  $(function () {-->
+<!--    // 设置主体内容顶部间距，防止被导航栏遮挡-->
+<!--    var navHeight = $("#nav_id").height();-->
+<!--    $(".page-wrapper").css("margin-top", navHeight + "px");-->
+
+<!--    getNavigation();-->
+<!--    getLoginUser();-->
+<!--  });-->
+
+<!--  // -&#45;&#45; 参考 nav.html 的写法 -&#45;&#45;-->
+<!--  function logoutAndRedirect() {-->
+<!--    fetch('/api/auth/logout', {-->
+<!--      method: 'POST',-->
+<!--      credentials: 'same-origin'-->
+<!--    }).then(response => {-->
+<!--      window.location.href = '/pages/login.html';-->
+<!--    }).catch(error => {-->
+<!--      window.location.href = '/pages/login.html';-->
+<!--    });-->
+<!--    return false;-->
+<!--  }-->
+
+<!--  function getNavigation() {-->
+<!--    $.ajax({-->
+<!--      type: "post",-->
+<!--      url: "/classification/getNavigation.do",-->
+<!--      dataType: "json",-->
+<!--      cache: false,-->
+<!--      async: false,-->
+<!--      success: function(data){-->
+<!--        renderNav(data);-->
+<!--      },-->
+<!--      error: function(){-->
+<!--        console.log("导航接口调用失败，使用默认数据还原截图效果");-->
+<!--        // 为了让结果如图，这里提供 Mock 数据兜底-->
+<!--        var mockData = [-->
+<!--          {id:1, name:"算法与协议"}, {id:2, name:"产品与系统"}, {id:3, name:"规划与架构"},-->
+<!--          {id:4, name:"集成与运维"}, {id:5, name:"密码服务"}, {id:6, name:"检测认证与评估"},-->
+<!--          {id:7, name:"密码管理"}, {id:8, name:"培训与咨询"}, {id:9, name:"密评工具"},-->
+<!--          {id:10, name:"编码与密码分析"}, {id:11, name:"理论教学"}-->
+<!--        ];-->
+<!--        renderNav(mockData);-->
+<!--      }-->
+<!--    });-->
+<!--  }-->
+
+<!--  function renderNav(data) {-->
+<!--    var htmlContent = "";-->
+<!--    window.__NAV_DATA__ = data || [];-->
+
+<!--    // 1. 首页 (固定)-->
+<!--    htmlContent += '<li><a href="/pages/index.html">首页</a></li>';-->
+
+<!--    // 2. 动态菜单-->
+<!--    if(data && data.length > 0) {-->
+<!--      $.each(data, function(index, item) {-->
+<!--        // 这里假设链接地址-->
+<!--        var url = "/pages/course.html?tid=" + item.id;-->
+<!--        htmlContent += '<li><a href="' + url + '">' + item.name + '</a></li>';-->
+<!--      });-->
+<!--    }-->
+
+<!--    // 3. 个人中心 (固定)-->
+<!--    htmlContent += '<li><a href="/user/userManagement.html">个人中心</a></li>';-->
+
+<!--    $("#daohang").html(htmlContent);-->
+<!--  }-->
+
+<!--  function getLoginUser() {-->
+<!--    $.ajax({-->
+<!--      type: "post",-->
+<!--      url: "/api/users/getUser",-->
+<!--      dataType: "json",-->
+<!--      cache: false,-->
+<!--      success: function(res){-->
+<!--        // 假设 res.user = { name: "张三", username: "111", college: "信息学院" }-->
+<!--        if(res && res.user){-->
+<!--          $("#u_name").html(res.user.name);-->
+<!--          $("#u_username").html(res.user.username);-->
+<!--          $("#u_college").html(res.user.college);-->
+<!--        }-->
+<!--      },-->
+<!--      error: function(){-->
+<!--        // 接口失败时，显示截图中的默认值-->
+<!--        $("#u_username").html("111");-->
+<!--      }-->
+<!--    });-->
+<!--  }-->
+<!--</script>-->
+
+<style>
+  /* --- 1. 顶部导航栏样式 (保留原黑色风格) --- */
+  .navbar-inverse { background-color: #000; border-color: #000; }
+  .navbar-inverse .navbar-nav > li > a { color: #fff; font-size: 14px; padding: 15px 12px; }
+  .navbar-inverse .navbar-nav > li > a:hover,
+  .navbar-inverse .navbar-nav > li > a:focus { color: #ccc; background-color: #333; }
+  .navbar-right { margin-right: 0; }
+
+  /* --- 2. 左侧侧边栏样式 (保留原卡片风格) --- */
+  .sidebar-box {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    background: #fff;
+    box-shadow: 0 1px 1px rgba(0,0,0,.05);
+  }
+  .sidebar-header {
+    padding: 10px 15px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+    background-color: #fff;
+    font-size: 14px;
+    color: #333;
+    font-weight: normal;
+  }
+  .sidebar-body { padding: 15px; font-size: 13px; }
+
+  .sidebar-nav { padding: 0; list-style: none; margin: 0; }
+  .sidebar-nav li { border-top: 1px solid #ddd; }
+  .sidebar-nav li:first-child { border-top: none; }
+  .sidebar-nav li a { display: block; padding: 10px 15px; color: #333; text-decoration: none; text-align: center; font-size: 14px; }
+  .sidebar-nav li a:hover { background-color: #f5f5f5; }
+  /* 激活状态样式 */
+  .sidebar-nav li a.active { background-color: #eee; font-weight: bold; color: #000; }
+</style>
+
+<nav id="nav_id" class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+  <div class="container-fluid">
+    <ul id="daohang" class="nav navbar-nav">
+    </ul>
+    <ul class="nav navbar-nav navbar-right" style="padding-right: 15px;">
+      <li><a href="#" onclick="logoutAndRedirect(); return false;"><span class="glyphicon glyphicon-log-out"></span> 退出</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="col-xs-2" style="padding-left: 0;">
+  <div class="sidebar-box">
+    <div class="sidebar-header">当前用户</div>
+    <div class="sidebar-body">
+      <table style="width: 100%;">
+        <tr>
+          <td style="text-align: right; width: 45%; color: #666; padding-bottom: 5px;">姓名：</td>
+          <td id="u_name" style="padding-bottom: 5px;"></td>
+        </tr>
+        <tr>
+          <td style="text-align: right; color: #666; padding-bottom: 5px;">编号：</td>
+          <td id="u_username" style="padding-bottom: 5px;"></td>
+        </tr>
+        <tr>
+          <td style="text-align: right; color: #666;">部门：</td>
+          <td id="u_college"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="sidebar-box">
+    <div class="sidebar-header">管理菜单</div>
+    <ul class="sidebar-nav">
+      <li><a href="../user/userManagement.html">用户管理</a></li>
+
+      <li><a id="link_course_mgmt" href="../user/courseStudent.html">课程管理</a></li>
+
+      <li id="li_create_course" style="display:none;">
+        <a id="link_create_course" href="../user/stContent.html">创建课程</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script type="text/javascript">
+  // 配置根路径，如无前缀则留空
+  var CTX = "";
+
+  $(function () {
+    var navHeight = $("#nav_id").height();
+    $(".page-wrapper").css("margin-top", (navHeight + 20) + "px");
+
+    getNavigation();
+    getLoginUser();
+  });
+
+  function logoutAndRedirect() {
+    $.ajax({
+      type: "post", url: CTX + "/api/auth/logout", cache: false,
+      complete: function () { window.location.href = CTX + "/pages/login.html"; }
+    });
+  }
+
+  function getNavigation() {
+    $.ajax({
+      type: "post",
+      url: CTX + "/classification/getNavigation.do",
+      dataType: "json",
+      cache: false,
+      success: function(data){
+        renderNav(data);
+      },
+      error: function(){
+        // 兜底数据，保持顶部导航有内容
+        var mockData = [
+          {id:1, name:"算法与协议"}, {id:2, name:"产品与系统"}, {id:11, name:"理论教学"}
+        ];
+        renderNav(mockData);
+      }
+    });
+  }
+
+  function renderNav(data) {
+    var htmlContent = "";
+    // 兼容返回格式
+    var list = (data && data.data) ? data.data : (Array.isArray(data) ? data : []);
+
+    htmlContent += '<li><a href="/pages/index.html">首页</a></li>';
+    $.each(list, function(index, item) {
+      var url = "/pages/course.html?tid=" + item.id;
+      htmlContent += '<li><a href="' + url + '">' + item.name + '</a></li>';
+    });
+    // 强制添加个人中心
+    htmlContent += '<li><a href="/user/userManagement.html">个人中心</a></li>';
+    $("#daohang").html(htmlContent);
+  }
+
+  function getLoginUser() {
+    $.ajax({
+      type: "post",
+      url: CTX + "/api/users/getUser",
+      dataType: "json",
+      cache: false,
+      success: function(res){
+        var user = (res && res.user) ? res.user : res;
+        if(user){
+          $("#u_name").html(user.name);
+          $("#u_username").html(user.username);
+          $("#u_college").html(user.college);
+
+          // 【核心逻辑】：根据角色判断菜单
+          // 假设 role "2" 为教师/管理员
+          if(String(user.role) === "2"){
+            // 1. 显示创建课程
+            $("#li_create_course").show();
+            // 2. 课程管理指向管理页
+            $("#link_course_mgmt").attr("href", "../user/courseManagement.html");
+          } else {
+            // 1. 隐藏创建课程
+            $("#li_create_course").hide();
+            // 2. 课程管理指向学生页
+            $("#link_course_mgmt").attr("href", "../user/courseStudent.html");
+          }
+        }
+      },
+      error: function(){
+        $("#u_name").html("未登录");
+      }
+    });
+  }
+</script>

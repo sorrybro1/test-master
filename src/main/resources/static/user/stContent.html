@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>创建课程</title>
+
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/bootstrap-table/1.11.1/bootstrap-table.min.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link href="../js/My97DatePicker/skin/WdatePicker.css" rel="stylesheet">
+    <link href="../js/bootstrap-tree/css/bootstrapStyle/bootstrapStyle.css" type="text/css" rel="stylesheet">
+
+    <style type="text/css">
+        /* .bu{
+            display: flex;
+            justify-content: center;
+            position: absolute;
+        }
+        .but{
+            width: 54px;
+            height: 34px;
+            margin-top: -17px;
+        } */
+        /* 页面微调，确保不被顶部导航遮挡，nav_per.html 里也会动态设置 margin-top */
+        .page-wrapper { margin-top: 60px; }
+
+        /* 修复 input-group 和 select 的对齐 */
+        .form-inline .form-group { margin-right: 10px; vertical-align: middle; }
+        .form-inline .input-group { vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <div id="nav-placeholder" style="background:#f5f5f5; padding:10px; margin-bottom:15px; border-bottom:1px solid #ddd;">
+    </div>
+
+    <div class="col-xs-10">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                创建课程
+            </div>
+
+            <div class="panel-body">
+                <div class="card-body">
+                    <div class="btn-group">
+                        <select id="semester" class="form-control" style="width: 160px;float: right;"></select>
+                    </div>
+                    &nbsp;&nbsp;&nbsp;
+
+                    <div class="btn-group" id="addTree">
+                        <button style="width:50px" id="add_org" data-toggle="modal" type="button" class="btn btn-primary btn-space">
+                            <span class="fa fa-search" aria-hidden="true" class="btn-icon-space"></span>
+                            班级
+                        </button>
+
+                        <input id="orgid" name="orgid" type="hidden">
+                        <input id="org_name" class="form-control" value="请选择班级" readonly style="width:178px;float: right;">
+                    </div>
+                    &nbsp;&nbsp;&nbsp;
+
+                    <button onclick="selectExp()" class="btn btn-default" type="button" style="width: 85px;">开设实验</button>
+                </div>
+
+                <div class="card-body" style="padding-top:15px;">
+                    <table id="mytab" class="table table-hover"></table>
+                </div>
+
+                <div class="modal fade bs-example-modal-lg" id="addTree_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" style="max-width:500px;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">班级</h4>
+                            </div>
+                            <div class="modal-body">
+                                <ul id="add_tree" class="ztree"></ul>
+                                <input type="hidden" id="ztreeid">
+                                <input type="hidden" id="ztreesname">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                                <button type="button" class="btn btn-primary" onclick="selection();">确定</button>
+                            </div>
+                        </div></div></div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdn.staticfile.org/bootstrap-table/1.11.1/bootstrap-table.min.js"></script>
+<script src="https://cdn.staticfile.org/bootstrap-table/1.11.1/locale/bootstrap-table-zh-CN.min.js"></script>
+
+<script type="text/javascript" src="../js/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.core.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.excheck.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.exedit.js"></script>
+
+<script type="text/javascript">
+    /** * 配置项目根路径
+     * 对应原 JSP 中的 ${pageContext.request.contextPath}
+     * 如果你的项目部署在 localhost:8080/MyProject，则此处填写 "/MyProject"
+     * 如果部署在根目录，则填写 ""
+     */
+    var ctx = "";
+
+    $(function () {
+        $("#nav-placeholder").load("../common/nav_per.html", function() {
+            setTimeout(function(){
+                // 1. 移除侧边栏里所有默认的 active
+                $(".sidebar-nav a").removeClass("active");
+                // 2. 找到“创建课程”链接并添加 active
+                // 注意：由于 nav_per.html 里默认隐藏了它，这里我们只要 role 验证通过，它就会显示
+                // 我们强制给它加上高亮样式
+                $("#link_create_course").addClass("active");
+
+                // 如果您希望在未获取到 role 之前就先强制显示出来(仅用于调试)，可以解注下面这行：
+                // $("#li_create_course").show();
+            }, 300); // 延时一点，等待 nav_per.html 里的 initUser 执行
+        });
+        getSemester();
+        getCurriculumList();
+        /* $("#semester").change(function(){
+            $('#mytab').bootstrapTable('refresh', {
+                url : ctx + "/curriculum/curriculumList.do?semester="+encodeURI(encodeURI($("#semester").val()))
+            });
+        }); */
+    });
+
+    // 3. 获取课程列表
+    function getCurriculumList() {
+        $('#mytab').bootstrapTable({
+            method : 'post',
+            url : ctx + "/content/list",
+            striped : true,
+            dataType: "json",
+            pagination : true,
+
+            // 【核心修改点】：改为 client，因为后端返回的是 List 数组
+            sidePagination : 'client',
+
+            pageList: [10, 20, 50],
+            pageSize: 10,
+            pageNumber: 1,
+            search: true, // 开启客户端搜索功能
+            // searchOnEnterKey: true, // 客户端分页通常不需要回车搜索，实时搜索体验更好
+            clickToSelect : true,
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            columns : [
+                {
+                    checkbox: true,
+                    visible: true
+                },{
+                    title: '序号',
+                    align: 'center',
+                    width: 50,
+                    formatter: function (value, row, index) {
+                        return index + 1;
+                    }
+                }, {
+                    title : '实验项目',
+                    align: 'center',
+                    field : 'title'
+                }, {
+                    title : '算法分类',
+                    align: 'center',
+                    field : 'tName',
+                    // 如果数据中 tName 为 null，可以加个 formatter 处理显示
+                    formatter: function(value, row, index) {
+                        return value ? value : '-';
+                    }
+                }
+            ],
+            // 如果后端返回的数据不在 rows 字段里（比如直接是数组），
+            // 客户端分页模式下，BootstrapTable 能自动识别数组，不需要 responseHandler
+            onLoadSuccess: function(data){
+                console.log("数据加载成功:", data);
+            },
+            onLoadError: function(status){
+                console.log("数据加载失败:", status);
+            }
+        });
+    }
+
+    //查询学期
+    function getSemester() {
+        $.ajax({
+            type: "post",
+            url: ctx + "/content/getSemester", // 替换 contextPath
+            cache:false,
+            async:false,
+            success:function(data){
+                // 返回 对象
+                var res=$.parseJSON(data);
+                $("#semester").html(res);
+            },
+            error:function(){
+                alert("获取数据失败");
+            }
+        });
+    }
+
+    $("#add_org").click(function(){
+        get_tree();
+        $.fn.zTree.init($("#add_tree"), setting, zNodes);
+        setTimeout("$('#addTree_modal').modal('show')",100);
+    });
+
+    function selectExp(){
+        var rows= $("#mytab").bootstrapTable('getSelections');
+        if (rows.length == 0) {
+            alert("请选择有效数据");
+            return;
+        }
+        var selectRows=JSON.stringify(rows);
+        var xqo = eval('(' + selectRows + ')');
+        var reportsIds="";
+        for(var i in xqo){
+            reportsIds += xqo[i].id;
+            reportsIds += ",";
+        }
+
+        var orgid=$("#orgid").val();
+        //alert(orgid);
+        var org_name=$("#org_name").val();
+        if(orgid==null||orgid==""){
+            alert("班级不能为空！");
+            return;
+        }
+        var semester = encodeURI(encodeURI($("#semester").val()));
+        if(semester==null||semester==""){
+            alert("实验学期不能为空！");
+            return;
+        }
+        $.ajax({
+            type: "post",
+            url: ctx + "/content/establish?uid="+reportsIds+"&semester="+semester+"&orgid="+orgid, // 替换 contextPath
+            success: function (data) {
+                //alert("666");
+                var res = $.parseJSON(data);
+                if (res.success == true) {
+                    alert(res.msg);
+                    window.location.href = ctx + 'stContent.html'; // 替换 contextPath
+                }else{
+                    alert(res.msg);
+                    window.location.href = ctx + 'stContent.html'; // 替换 contextPath
+                }
+            }
+        });
+    }
+</script>
+
+<script type="text/javascript">
+    var setting = {
+        view: {
+            //addHoverDom: addHoverDom3, //当鼠标移动到节点上时，显示用户自定义控件
+            //removeHoverDom: removeHoverDom3, //离开节点时的操作
+            selectedMulti: false
+        },
+        check: {
+            enable: true,
+            // chkStyle: "checkbox",
+            // radioType: "all"
+            chkboxType: { "Y": "s", "N": "s" }
+            //Y 属性定义 checkbox 被勾选后的情况；
+            //N 属性定义 checkbox 取消勾选后的情况；
+            //“p” 表示操作会影响父级节点；
+            //“s” 表示操作会影响子级节点。
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        edit: {
+            enable: false
+        },
+        callback: {
+            onCheck: onCheck
+            //beforeRemove: beforeRemove3,//删除事件
+            //onRename: onRename3 //修改事件
+        }
+    };
+    var zNodes ="";
+
+    //查询分类树
+    function get_tree() {
+        $.ajax({
+            type: "post",
+            url: ctx + "/stOrgCtr/getOrgInfo", // 替换 contextPath
+            cache:false,
+            async:false,
+            dataType : 'json',
+            success:function(res){
+                zNodes =res.tree;
+                //alert(zNodes);
+            },
+            error:function(){
+                alert("班级分类查询失败！");
+            }
+        });
+    }
+    $(document).ready(function(){
+        get_tree();
+        $.fn.zTree.init($("#add_tree"), setting, zNodes);
+    });
+
+    var newCount = 1;
+    //删除无效按钮
+    function removeHoverDom(treeId, treeNode) {
+        $("#addBtn_"+treeNode.tId).unbind().remove();
+    };
+
+    //添加节点
+    function addHoverDom(treeId, treeNode) {
+        return;
+    };
+    //修改节点
+    function onRename(e, treeId, treeNode, isCancel) {
+        return;
+    }
+
+    //删除节点
+    function onRemove(treeId, treeNode) {
+        return;
+    }
+    //删除前判断是否被使用
+    function beforeRemove(treeId, treeNode) {
+        return;
+    }
+    function onCheck(e, treeId, treeNode){  //这是将所有选中节点的名字 用,分割做拼接 用于持久化到数据库
+        var zTree =  $.fn.zTree.getZTreeObj("add_tree").getNodesByFilter(filter);
+        var ids = "";
+        var names="";
+        for (var i = 0; i < zTree.length; i++) {
+            if (zTree[i].id != null) {
+                ids += (i == (zTree.length-1))?zTree[i].id:zTree[i].id+",";
+            }
+            if(zTree[i].name !=null){
+                names += (i == (zTree.length-1))?zTree[i].name:zTree[i].name+",";
+            }
+        };
+        $("#ztreesname").val(names);
+        $("#ztreeid").val(ids);
+    }
+    function filter(node) {   //过滤器直选中2级节点累加
+        return (node.checked == true);
+    }
+    //选择分类
+    function selection() {
+        var id=$("#ztreeid").val();
+        var name=$("#ztreesname").val();
+        if(id!="" && name!=""){
+            $("#addTree_modal").modal('hide');
+            $("#orgid").val(id);
+            $("#org_name").val(name);
+        }else{
+            alert("请选择班级！");
+        }
+    }
+</script>
+
+</body>
+</html>

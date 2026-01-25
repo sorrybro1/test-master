@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.ScoreMapper">
+
+    <select id="selectAllSemesters" resultType="java.time.LocalDateTime">
+        SELECT DISTINCT semester
+        FROM st_course
+        WHERE semester IS NOT NULL
+        ORDER BY semester DESC
+    </select>
+
+    <select id="selectStudentSemesters" resultType="java.time.LocalDateTime">
+        SELECT DISTINCT b.semester
+        FROM st_score a
+                 LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        WHERE a.snumber = #{uid} AND b.semester IS NOT NULL
+        ORDER BY b.semester DESC
+    </select>
+
+    <select id="selectTotalScoreTimes" resultType="java.time.LocalDateTime">
+        SELECT DISTINCT b.semester
+        FROM st_score a
+                 LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        WHERE b.semester IS NOT NULL
+        ORDER BY b.semester DESC
+    </select>
+
+    <select id="countCurriculum" resultType="long">
+        SELECT count(*) FROM st_course
+        <where>
+            <if test="startTime != null">
+                AND semester &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND semester &lt; #{endTime}
+            </if>
+        </where>
+    </select>
+
+    <select id="listCurriculum" resultType="java.util.Map">
+        SELECT
+        d.id, d.cnumber, d.semester, d.c_endingtime,
+        c.title as cname,
+        (SELECT GROUP_CONCAT(o.name) FROM st_orgcourse oc
+        LEFT JOIN st_org o ON oc.orgid = o.id
+        WHERE oc.courseid = d.cnumber) as org_name
+        FROM st_course d
+        LEFT JOIN st_content c ON d.conid = c.id
+        <where>
+            <if test="startTime != null">
+                AND d.semester &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND d.semester &lt; #{endTime}
+            </if>
+        </where>
+        ORDER BY d.cnumber DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectCurriculumById" resultType="java.util.Map">
+        SELECT a.*, b.title as cname
+        FROM st_course a
+                 LEFT JOIN st_content b ON a.conid = b.id
+        WHERE a.id = #{id}
+    </select>
+    <update id="updateCourseEndingTime">
+        UPDATE st_course SET c_endingtime = #{time} WHERE cnumber = #{cNumber}
+    </update>
+    <delete id="deleteCurriculumById">
+        DELETE FROM st_course WHERE id = #{id}
+    </delete>
+
+    <select id="countCourseStudent" resultType="long">
+        SELECT count(a.sco_id)
+        FROM st_score a
+        LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        WHERE a.snumber = #{uid}
+        <if test="startTime != null">
+            AND b.semester &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND b.semester &lt; #{endTime}
+        </if>
+    </select>
+
+    <select id="listCourseStudent" resultType="com.example.demo.dto.CourseStudentRowVO">
+        SELECT
+        b.conid, b.cnumber, b.semester,
+        b.cname, b.cdesc, b.c_endingtime,
+        a.sco_id, a.upload_file_name, a.total_points, a.degree_exp, a.degree_other
+        FROM st_score a
+        LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        WHERE a.snumber = #{uid}
+        <if test="startTime != null">
+            AND b.semester &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND b.semester &lt; #{endTime}
+        </if>
+        ORDER BY b.semester DESC, a.sco_id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectUploadFileName" resultType="String">
+        SELECT upload_file_name FROM st_score WHERE sco_id = #{scoId}
+    </select>
+    <update id="updateUploadInfo">
+        UPDATE st_score SET upload_file_name = #{fileName}, submission_time = #{submitTime} WHERE sco_id = #{scoId}
+    </update>
+    <select id="countLaboratoryReports" resultType="long">
+        SELECT count(a.sco_id) FROM st_score a
+        LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        LEFT JOIN st_content ct ON b.conid = ct.id
+        WHERE 1=1
+        <if test="cnumber != null and cnumber != ''"> AND a.cnumber = #{cnumber} </if>
+        <if test="cname != null and cname != ''"> AND ct.title LIKE CONCAT('%', #{cname}, '%') </if>
+    </select>
+    <select id="listLaboratoryReports" resultType="java.util.Map">
+        SELECT a.sco_id, a.cnumber, a.snumber, a.upload_file_name, a.degree_exp, a.degree_other, a.total_points, a.submission_time,
+        ct.title as cname, b.semester, u.username, u.name as sname, u.college, u.professional,
+        (SELECT org.name FROM st_orgrole ogr LEFT JOIN st_org org ON ogr.orgid = org.id WHERE ogr.userid = a.snumber LIMIT 1) as org_name
+        FROM st_score a
+        LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        LEFT JOIN st_content ct ON b.conid = ct.id
+        LEFT JOIN st_user u ON a.snumber = u.uid
+        WHERE 1=1
+        <if test="cnumber != null and cnumber != ''"> AND a.cnumber = #{cnumber} </if>
+        <if test="cname != null and cname != ''"> AND ct.title LIKE CONCAT('%', #{cname}, '%') </if>
+        ORDER BY a.sco_id DESC LIMIT #{offset}, #{limit}
+    </select>
+    <update id="updateScore">
+        UPDATE st_score SET degree_exp = #{degreeExp}, degree_other = #{degreeOther}, total_points = #{totalPoints} WHERE sco_id = #{scoId}
+    </update>
+    <select id="selectFilesByScoIds" resultType="java.util.Map">
+        SELECT a.upload_file_name, a.snumber, u.name as sname, ct.title as cname
+        FROM st_score a LEFT JOIN st_user u ON a.snumber = u.uid LEFT JOIN st_course b ON a.cnumber = b.cnumber LEFT JOIN st_content ct ON b.conid = ct.id
+        WHERE a.sco_id IN <foreach collection="ids" item="id" open="(" separator="," close=")"> #{id} </foreach>
+    </select>
+    <select id="selectFileByScoId" resultType="java.util.Map">
+        SELECT a.upload_file_name, a.snumber, u.name as sname, ct.title as cname
+        FROM st_score a LEFT JOIN st_user u ON a.snumber = u.uid LEFT JOIN st_course b ON a.cnumber = b.cnumber LEFT JOIN st_content ct ON b.conid = ct.id
+        WHERE a.sco_id = #{scoId}
+    </select>
+    <select id="countTotalScores" resultType="long">
+        SELECT count(a.sco_id) FROM st_score a LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        <where>
+            <if test="time != null and time != ''"> AND b.semester = #{time} </if> </where>
+    </select>
+    <select id="listTotalScores" resultType="java.util.Map">
+        SELECT a.sco_id, a.snumber, a.total_points, u.name as sname, u.college, u.professional, ct.title as cname, b.semester,
+        (SELECT org.name FROM st_orgrole ogr LEFT JOIN st_org org ON ogr.orgid = org.id WHERE ogr.userid = a.snumber LIMIT 1) as class_name
+        FROM st_score a LEFT JOIN st_user u ON a.snumber = u.uid LEFT JOIN st_course b ON a.cnumber = b.cnumber LEFT JOIN st_content ct ON b.conid = ct.id
+        <where>
+            <if test="time != null and time != ''"> AND b.semester = #{time} </if>
+        </where>
+        ORDER BY a.sco_id DESC LIMIT #{offset}, #{limit}
+    </select>
+    <select id="selectTotalScoreForExport" resultType="java.util.Map">
+        SELECT a.snumber, a.total_points, u.name as sname, u.college, u.professional, ct.title as cname,
+               (SELECT org.name FROM st_orgrole ogr LEFT JOIN st_org org ON ogr.orgid = org.id WHERE ogr.userid = a.snumber LIMIT 1) as class_name
+        FROM st_score a LEFT JOIN st_user u ON a.snumber = u.uid LEFT JOIN st_course b ON a.cnumber = b.cnumber LEFT JOIN st_content ct ON b.conid = ct.id
+        ORDER BY b.semester DESC, u.uid ASC
+    </select>
+</mapper>

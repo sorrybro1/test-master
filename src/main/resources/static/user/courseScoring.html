@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>课程打分</title>
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/bootstrap-table/1.18.3/bootstrap-table.min.css" rel="stylesheet">
+
+    <style type="text/css">
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #fcfcfc; }
+        .page-wrapper { margin-top: 60px; }
+        .panel-heading { font-weight: bold; background-color: #f5f5f5; }
+        .bu { text-align: center; }
+
+        /* 修复输入框在表格中的对齐问题 */
+        .table input.form-control {
+            height: 30px;
+            padding: 4px 6px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid page-wrapper">
+    <div class="row">
+        <div id="nav-placeholder"></div>
+
+        <div class="col-xs-10">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <a href="courseManagement.html">课程管理</a> / <span id="display_cname"></span>
+                    <input type="hidden" id="cnumber" value="">
+                    <input type="hidden" id="rows_count" value="0">
+                </div>
+
+                <div class="panel-body">
+                    <div class="card-body">
+                        <button onclick="save_scoring()" class="btn btn-default" type="button" style="width: 85px;">保存</button>
+                        <button onclick="downloadCheckLaboratoryReport()" class="btn btn-default" type="button" style="width: 120px;">下载实验报告</button>
+                        <button onclick="downloadLaboratoryReport()" class="btn btn-default" type="button" style="width: 150px;">下载全部实验报告</button>
+                    </div>
+
+                    <div class="card-body" style="padding-top:15px;">
+                        <table id="mytab" class="table table-hover"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdn.staticfile.org/bootstrap-table/1.18.3/bootstrap-table.min.js"></script>
+<script src="https://cdn.staticfile.org/bootstrap-table/1.18.3/locale/bootstrap-table-zh-CN.min.js"></script>
+
+<script type="text/javascript">
+    // 配置项目路径（如果 API 不在根目录，请修改此处）
+    var CTX_PATH = "";
+
+    $(function () {
+        // 1. 加载侧边栏
+        $("#nav-placeholder").load("../common/nav_per.html", function() {
+            setTimeout(function(){
+                // 保持侧边栏高亮逻辑
+                $(".sidebar-nav a").removeClass("active");
+                $(".sidebar-nav a[href*='courseManagement']").addClass("active");
+            }, 100);
+        });
+
+        // 2. 解析 URL 参数 (模拟 JSP 的 request.getParameter)
+        var params = getUrlParams();
+        var cnumber = params.cnumber;
+        var cname = params.cname ? decodeURI(decodeURI(params.cname)) : ""; // 双重解码适配原逻辑
+
+        $("#cnumber").val(cnumber);
+        $("#display_cname").text(cname);
+
+        // 3. 初始化表格
+        if(cnumber){
+            getLaboratoryReportList(cnumber);
+        } else {
+            alert("缺少课程编号参数！");
+        }
+    });
+
+    // --- 工具：获取 URL 参数 ---
+    function getUrlParams() {
+        var params = {};
+        var search = window.location.search.substring(1);
+        if(search){
+            var arr = search.split("&");
+            for(var i=0; i<arr.length; i++){
+                var pair = arr[i].split("=");
+                params[pair[0]] = pair[1];
+            }
+        }
+        return params;
+    }
+
+    // --- 核心业务逻辑 ---
+
+    // 1. 加载实验报告列表
+    function getLaboratoryReportList(cnumber) {
+        $('#mytab').bootstrapTable({
+            method : 'post',
+            url : CTX_PATH + "/curriculum/laboratoryReportList.do",
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            striped : true,
+            dataType: "json",
+            pagination : true,
+            sidePagination : 'server', // 服务端分页
+            pageList: [5, 10, 20, 50, 80, 100],
+            pageSize: 10,
+            pageNumber: 1,
+            paginationLoop: true,
+            searchOnEnterKey: true,
+            clickToSelect : true,
+            queryParams: function(params) {
+                return {
+                    limit: params.limit,
+                    offset: params.offset,
+                    cnumber: cnumber // 传入课程ID
+                };
+            },
+            onLoadSuccess: function(data){
+                // 记录当前页有多少行数据，用于保存时的循环
+                $("#rows_count").val(data.rows.length);
+            },
+            columns : [
+                { checkbox: true, visible: true },
+                {
+                    title: '序号',
+                    align: 'center',
+                    width: 50,
+                    formatter: function (value, row, index) {
+                        var options = $('#mytab').bootstrapTable('getOptions');
+                        return options.pageSize * (options.pageNumber - 1) + index + 1;
+                    }
+                },
+                { title : '学号', align: 'center', width:100, field : 'username' },
+                { title : '姓名', align: 'center', width:100, field : 'name' },
+                { title : '学院', align: 'center', width:100, field : 'college' },
+                { title : '专业', align: 'center', width:100, field : 'professional' },
+                { title : '班级', align: 'center', width:100, field : 'org_name' },
+                { title : '学期', align: 'center', width:100, field : 'semester' },
+                {
+                    title : '是否提交',
+                    align: 'center',
+                    width: 80,
+                    field : 'upload_file_name',
+                    formatter: function(value, row, index){
+                        if(value == null || value == "null" || value == ""){
+                            return '<span class="glyphicon glyphicon-remove" style="color:#a11;"></span>';
+                        } else {
+                            return '<span class="glyphicon glyphicon-ok" style="color:#080;"></span>';
+                        }
+                    }
+                },
+                {
+                    title : '实验操作分数',
+                    field : 'degree_exp',
+                    width: 100,
+                    formatter: function(value, row, index){
+                        if(value == null || value == "null") value = 0;
+                        // 【关键修改】id 改为 "degree_exp_" + row.sco_id
+                        return '<input id="degree_exp_' + row.sco_id + '" value="' + value + '" class="form-control bu" type="text"/>';
+                    }
+                },
+                {
+                    title : '实验报告分数',
+                    field : 'degree_other',
+                    width: 100,
+                    formatter: function(value, row, index){
+                        if(value == null || value == "null") value = 0;
+                        // 【关键修改】id 改为 "degree_other_" + row.sco_id
+                        return '<input id="degree_other_' + row.sco_id + '" value="' + value + '" class="form-control bu" type="text"/>';
+                    }
+                },
+                {
+                    title : '总分',
+                    align: 'center',
+                    field : 'total_points',
+                    width: 80,
+                    formatter: function(value, row, index){
+                        if(value == null || value == "null") value = 0;
+                        return '<input disabled id="total_points'+index+'" value="'+value+'" class="form-control bu" type="text"/>';
+                    }
+                }
+            ]
+        });
+    }
+
+    // --- 分数计算逻辑 (保留原逻辑) ---
+
+    // 修改实验操作分 -> 触发计算
+    function scorea(index) {
+        var reg = /^[0-9]{1,3}$/;
+        var degree_exp_val = $("#degree_exp"+index).val();
+        var degree_exp = 0;
+
+        if(reg.test(degree_exp_val)){
+            degree_exp = parseInt(degree_exp_val);
+            if(degree_exp < 0 || degree_exp > 100){
+                degree_exp = 0;
+                $("#degree_exp"+index).val("0");
+            }
+        } else {
+            $("#degree_exp"+index).val("0");
+        }
+
+        var degree_other_val = $("#degree_other"+index).val();
+        var degree_other = 0;
+        if(degree_other_val != null && degree_other_val != ""){
+            degree_other = parseInt(degree_other_val);
+        }
+
+        var total_points = degree_exp + degree_other;
+        if(total_points > 100){
+            // 如果总分超100，原有逻辑是重置当前操作分为0?
+            // (原代码逻辑: $("#degree_exp"+index).val("0"); $("#total_points"+index).val(degree_other);)
+            // 这里保持原逻辑不变
+            $("#degree_exp"+index).val("0");
+            $("#total_points"+index).val(degree_other);
+        } else {
+            $("#total_points"+index).val(total_points);
+        }
+    }
+
+    // 修改实验报告分 -> 触发计算
+    function scoreb(index) {
+        var reg = /^[0-9]{1,3}$/;
+        var degree_exp_val = $("#degree_exp"+index).val();
+        var degree_exp = 0;
+        if(degree_exp_val != null && degree_exp_val != ""){
+            degree_exp = parseInt(degree_exp_val);
+        }
+
+        var degree_other_val = $("#degree_other"+index).val();
+        var degree_other = 0;
+
+        if(reg.test(degree_other_val)){
+            degree_other = parseInt(degree_other_val);
+            if(degree_other < 0 || degree_other > 100){
+                degree_other = 0;
+                $("#degree_other"+index).val("0");
+            }
+        } else {
+            $("#degree_other"+index).val("0");
+        }
+
+        var total_points = degree_exp + degree_other;
+        if(total_points > 100){
+            $("#degree_other"+index).val("0");
+            $("#total_points"+index).val(degree_exp);
+        } else {
+            $("#total_points"+index).val(total_points);
+        }
+    }
+
+    function save_scoring() {
+        // 获取当前页的表格数据
+        var tableData = $("#mytab").bootstrapTable('getData');
+        var scoreList = [];
+
+        for(var i = 0; i < tableData.length; i++){
+            var row = tableData[i];
+
+            // 【关键修改】使用 sco_id 来查找输入框
+            // 这样可以确保我们只获取当前页面存在的输入框的值
+            var expInput = $("#degree_exp_" + row.sco_id);
+            var otherInput = $("#degree_other_" + row.sco_id);
+
+            // 如果页面上找不到这个输入框（比如在翻页后的其他页），就跳过，不要传 0 去覆盖！
+            if(expInput.length === 0 || otherInput.length === 0) {
+                continue;
+            }
+
+            var degree_exp = expInput.val();
+            var degree_other = otherInput.val();
+
+            // 数据清洗
+            degree_exp = (degree_exp && degree_exp !== "") ? parseFloat(degree_exp) : 0;
+            degree_other = (degree_other && degree_other !== "") ? parseFloat(degree_other) : 0;
+
+            scoreList.push({
+                sco_id: row.sco_id,
+                degree_exp: degree_exp,
+                degree_other: degree_other
+            });
+        }
+
+        if (scoreList.length === 0) {
+            alert("当前页面没有可保存的数据");
+            return;
+        }
+
+        // 发送 AJAX 请求
+        $.ajax({
+            type: "post",
+            url: CTX_PATH + "/curriculum/saveScoring.do",
+            contentType: "application/json;charset=utf-8",
+            data: JSON.stringify(scoreList),
+            success: function(res){
+                var result = (typeof res === 'string') ? JSON.parse(res) : res;
+                if(result.success !== false){
+                    alert("保存成功");
+                    // 刷新表格，显示最新数据
+                    $('#mytab').bootstrapTable('refresh');
+                } else {
+                    alert(result.msg || "保存失败");
+                }
+            },
+            error: function(){
+                alert("网络错误，保存失败");
+            }
+        });
+    }
+
+    // --- 下载选中报告 ---
+    function downloadCheckLaboratoryReport() {
+        var rows = $('#mytab').bootstrapTable('getSelections');
+        if(rows.length === 0){
+            alert("请选择要下载的报告");
+            return;
+        }
+
+        var sco_id = "";
+        for(var i in rows){
+            sco_id += rows[i].sco_id + ",";
+        }
+
+        // 执行下载 (GET请求)
+        location.href = CTX_PATH + "/curriculum/downloadCheckLaboratoryReport.do?sco_id=" + sco_id;
+    }
+
+    // --- 下载全部报告 ---
+    function downloadLaboratoryReport() {
+        var cnumber = $("#cnumber").val();
+        location.href = CTX_PATH + "/curriculum/downloadLaboratoryReport.do?cnumber=" + cnumber;
+    }
+
+</script>
+</body>
+</html>

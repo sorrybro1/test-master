@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>课程管理</title>
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/bootstrap-table/1.18.3/bootstrap-table.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/zTree.v3/3.5.29/css/zTreeStyle/zTreeStyle.min.css" rel="stylesheet">
+
+    <style>
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #fcfcfc; }
+        /* 调整内容区域，避开顶部导航栏 */
+        .page-wrapper { margin-top: 60px; }
+        .panel-heading { font-weight: bold; background-color: #f5f5f5; }
+        .toolbar-container { padding: 15px; background: #fff; border-bottom: 1px solid #eee; }
+        .table > thead > tr > th { vertical-align: middle; font-weight: bold; border-bottom: 2px solid #ddd; }
+
+        /* 课程链接样式：让用户知道这里可以点击 */
+        .course-link { color: #337ab7; cursor: pointer; text-decoration: none; }
+        .course-link:hover { text-decoration: underline; color: #23527c; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid page-wrapper">
+    <div class="row">
+        <div id="nav-placeholder"></div>
+
+        <div class="col-xs-10">
+            <div class="panel panel-default">
+                <div class="panel-heading">课程管理</div>
+
+                <div class="panel-body" style="padding: 0;">
+                    <div class="toolbar-container clearfix">
+                        <div class="pull-left btn-group">
+                            <button onclick="total_score()" class="btn btn-default">全部成绩</button>
+                            <button onclick="delete_all_curriculum()" class="btn btn-default">批量删除</button>
+                            <button onclick="update_endingtime()" class="btn btn-default">保存截止时间</button>
+                        </div>
+
+                        <div class="pull-right form-inline">
+                            <div class="input-group" style="margin-right: 10px;">
+                                <span class="input-group-btn">
+                                    <button id="add_org" class="btn btn-primary" type="button">
+                                        <span class="glyphicon glyphicon-search"></span> 班级
+                                    </button>
+                                </span>
+                                <input id="org_name" class="form-control" readonly style="width: 150px; background: #fff;" placeholder="选择班级">
+                                <input id="orgid" type="hidden">
+                            </div>
+
+                            <select id="semester" class="form-control" style="width: 160px;">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="padding: 15px;">
+                        <table id="mytab" class="table table-hover table-bordered"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addTree_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 400px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">选择班级</h4>
+            </div>
+            <div class="modal-body">
+                <ul id="add_tree" class="ztree" style="height: 300px; overflow-y: scroll;"></ul>
+                <input type="hidden" id="ztreeid">
+                <input type="hidden" id="ztreesname">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="selection()">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdn.staticfile.org/bootstrap-table/1.18.3/bootstrap-table.min.js"></script>
+<script src="https://cdn.staticfile.org/bootstrap-table/1.18.3/locale/bootstrap-table-zh-CN.min.js"></script>
+<script src="https://cdn.staticfile.org/zTree.v3/3.5.29/js/jquery.ztree.all.min.js"></script>
+
+<script type="text/javascript">
+    // 【配置项】如果项目不是部署在根目录，请在这里设置项目名 (例如 "/myProject")
+    // 这里代替了原 JSP 中的 ${pageContext.request.contextPath}
+    var CTX_PATH = "";
+
+    $(function () {
+        // 1. 加载侧边栏 (假设 nav_per.html 在 ../common 目录下)
+        $("#nav-placeholder").load("../common/nav_per.html", function() {
+            // 延时一小会儿，确保 DOM 加载完成后设置高亮
+            setTimeout(function(){
+                $(".sidebar-nav a").removeClass("active");
+                $(".sidebar-nav a[href*='courseManagement']").addClass("active");
+            }, 100);
+        });
+
+        // 2. 初始化数据
+        getSemester();
+        getCurriculumList();
+
+        // 3. 绑定事件监听
+        $("#semester").change(function(){
+            refreshTable();
+        });
+
+        $("#add_org").click(function(){
+            get_tree();
+            // 初始化 ZTree
+            $.fn.zTree.init($("#add_tree"), setting, window.zNodes);
+            $('#addTree_modal').modal('show');
+        });
+    });
+
+    // 刷新表格数据
+    function refreshTable() {
+        var orgid = $("#orgid").val();
+        var semester = $("#semester").val();
+
+        $('#mytab').bootstrapTable('refresh', {
+            url: CTX_PATH + "/curriculum/curriculumList.do",
+            query: {
+                semester: semester,
+                orgid: orgid
+            }
+        });
+    }
+
+    // --- 接口：获取学期 ---
+    function getSemester() {
+        $.ajax({
+            type: "post",
+            url: CTX_PATH + "/curriculum/getSemester.do",
+            async: false,
+            success: function(data) {
+                // 直接填充后端返回的 HTML (option标签)
+                $("#semester").html(data);
+            },
+            error: function() {
+                console.error("获取学期数据失败");
+            }
+        });
+    }
+
+    // --- 表格初始化配置 ---
+    function getCurriculumList() {
+        $('#mytab').bootstrapTable({
+            method: 'post',
+            url: CTX_PATH + "/curriculum/curriculumList.do",
+            striped: true, // 隔行变色
+            dataType: "json",
+            pagination: true, // 开启分页
+            sidePagination: 'server', // 服务端分页
+            pageList: [5, 10, 20, 50, 80, 100],
+            pageSize: 10,
+            pageNumber: 1,
+            paginationLoop: true,
+            searchOnEnterKey: true,
+            clickToSelect: true,
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            queryParams: function(params) {
+                return {
+                    limit: params.limit, // 每页条数
+                    offset: params.offset, // 偏移量
+                    semester: $("#semester").val(),
+                    orgid: $("#orgid").val()
+                };
+            },
+            columns: [
+                { checkbox: true, visible: true },
+                {
+                    title: '序号',
+                    align: 'center',
+                    formatter: function (value, row, index) {
+                        var options = $('#mytab').bootstrapTable('getOptions');
+                        // 计算序号：页大小 * (当前页-1) + 当前索引 + 1
+                        return options.pageSize * (options.pageNumber - 1) + index + 1;
+                    }
+                },
+                {
+                    title: '实验项目',
+                    align: 'center',
+                    field: 'cname',
+                    formatter: function(value, row, index) {
+                        // 【功能修复】这里恢复了 JSP 中的点击跳转功能
+                        // 生成一个可以点击的链接，调用 see_curriculum 方法
+                        if(!value) return "-";
+                        return '<a class="course-link" onclick="see_curriculum('+index+')">' + value + '</a>';
+                    }
+                },
+                { title: '学期', align: 'center', field: 'semester' },
+                { title: '班级', align: 'center', field: 'orgname' },
+                {
+                    title: '设置截止时间',
+                    align: 'center',
+                    field: 'c_endingtime',
+                    width: 200,
+                    formatter: function (value, row, index) {
+                        // 后端通常返回 "2023-01-01 12:00:00"
+                        // input type="datetime-local" 需要 "2023-01-01T12:00:00" 格式
+                        var timeVal = "";
+                        if(value && value !== "null"){
+                            timeVal = value.replace(" ", "T");
+                            // 截取前16位 (yyyy-MM-ddThh:mm) 适配控件
+                            if(timeVal.length > 16) timeVal = timeVal.substring(0, 16);
+                        }
+                        return '<input type="datetime-local" class="form-control input-sm" id="endingtime'+index+'" value="'+timeVal+'">';
+                    }
+                },
+                {
+                    title: '打分/删除',
+                    align: 'center',
+                    field: 'cnumber',
+                    formatter: function (value, row, index) {
+                        return '<button onclick="see_curriculum('+index+')" class="btn btn-default btn-xs" type="button">打分</button>&nbsp;' +
+                            '<button onclick="delete_curriculum('+index+')" class="btn btn-default btn-xs" type="button">删除</button>';
+                    }
+                }
+            ]
+        });
+    }
+
+    // --- 业务逻辑方法 ---
+
+    // 1. 跳转到打分/课程详情页面
+    function see_curriculum(index) {
+        var data = $("#mytab").bootstrapTable('getData');
+        var row = data[index];
+        var cnumber = row.cnumber;
+        var cname = row.cname;
+
+        // 【重要】保留原 JSP 的双重 encodeURI 逻辑，防止中文参数乱码
+        var encodedName = encodeURI(encodeURI(cname));
+
+        window.location.href = CTX_PATH + "courseScoring.html?cnumber=" + cnumber + "&cname=" + encodedName;
+    }
+
+    // 2. 批量保存截止时间
+    function update_endingtime() {
+        var data = $("#mytab").bootstrapTable('getData');
+        var str = "";
+
+        for(var i=0; i<data.length; i++){
+            var cnumber = data[i].cnumber;
+            // 获取输入框的值
+            var val = $("#endingtime"+i).val();
+            // 将 "T" 替换回空格，以便存入数据库: "2023-01-01T12:00" -> "2023-01-01 12:00"
+            if(val) {
+                var c_endingtime = val.replace("T", " ");
+                // 如果后端严格要求秒数，补全 :00
+                if(c_endingtime.split(":").length === 2) {
+                    c_endingtime += ":00";
+                }
+                str += cnumber + "," + c_endingtime + ">";
+            }
+        }
+
+        if(str === "") {
+            // 如果没有需要保存的数据，可以在这里加提示，原逻辑未加
+        }
+
+        $.ajax({
+            type: "post",
+            url: CTX_PATH + "/curriculum/updateEndingtime.do",
+            data: { str: str },
+            success: function(res) {
+                // 兼容处理：无论返回字符串还是JSON对象
+                var result = (typeof res === 'string') ? JSON.parse(res) : res;
+                if(result.success === false){
+                    alert("截止时间修改失败");
+                } else {
+                    alert("保存成功");
+                    refreshTable(); // 刷新表格
+                }
+            },
+            error: function(){
+                alert("获取数据失败");
+            }
+        });
+    }
+
+    // 3. 删除单个课程
+    function delete_curriculum(index) {
+        var row = $("#mytab").bootstrapTable('getData')[index];
+        var str = row.cnumber + ",";
+
+        if(confirm("确认删除该课程吗？")){
+            $.ajax({
+                type: "post",
+                url: CTX_PATH + "/curriculum/deleteCurriculum.do?str=" + str,
+                success: function(data){
+                    var res = (typeof data === 'string') ? JSON.parse(data) : data;
+                    if(res.success === false){
+                        alert("删除失败");
+                    } else {
+                        refreshTable();
+                    }
+                },
+                error: function(){
+                    alert("获取数据失败");
+                }
+            });
+        }
+    }
+
+    // 4. 批量删除课程
+    function delete_all_curriculum() {
+        var rows = $('#mytab').bootstrapTable('getSelections');
+
+        if(rows.length === 0){
+            alert("请选择要删除的课程");
+            return;
+        }
+
+        var str = "";
+        $.each(rows, function(i, row){
+            str += row.cnumber + ",";
+        });
+
+        if(confirm("确认删除该课程吗？")){
+            $.ajax({
+                type: "post",
+                url: CTX_PATH + "/curriculum/deleteCurriculum.do?str=" + str,
+                success: function(data){
+                    var res = (typeof data === 'string') ? JSON.parse(data) : data;
+                    if(res.success === false){
+                        alert("删除失败");
+                    }
+                    refreshTable();
+                },
+                error: function(){
+                    alert("获取数据失败");
+                }
+            });
+        }
+    }
+
+    // 5. 跳转到全部成绩
+    function total_score() {
+        window.location.href = CTX_PATH + "/curriculum/toTotalScore.do";
+    }
+
+    // --- ZTree 树形菜单配置 ---
+    var setting = {
+        check: {
+            enable: true,
+            chkboxType: { "Y": "s", "N": "s" } // 勾选父子节点的关联关系
+        },
+        data: {
+            simpleData: { enable: true }
+        },
+        callback: {
+            onCheck: onCheck
+        }
+    };
+
+    var zNodes = "";
+
+    // 获取班级树数据
+    function get_tree() {
+        $.ajax({
+            type: "post",
+            url: CTX_PATH + "/stOrgCtr/getOrgInfo",
+            async: false,
+            dataType: 'json',
+            success: function(res) {
+                window.zNodes = res.tree;
+            },
+            error: function(){
+                alert("班级分类查询失败！");
+            }
+        });
+    }
+
+    // 树节点勾选事件
+    function onCheck(e, treeId, treeNode) {
+        var zTree = $.fn.zTree.getZTreeObj("add_tree");
+        // 获取所有被勾选的节点
+        var nodes = zTree.getCheckedNodes(true);
+
+        var ids = "";
+        var names = "";
+
+        // 还原原 JSP 的循环拼接逻辑
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].id != null) {
+                ids += nodes[i].id + (i === nodes.length - 1 ? "" : ",");
+            }
+            if (nodes[i].name != null) {
+                names += nodes[i].name + (i === nodes.length - 1 ? "" : ",");
+            }
+        }
+        $("#ztreesname").val(names);
+        $("#ztreeid").val(ids);
+    }
+
+    // 确认选择班级
+    function selection() {
+        var id = $("#ztreeid").val();
+        var name = $("#ztreesname").val();
+        if(id && name){
+            $("#addTree_modal").modal('hide');
+            $("#orgid").val(id);
+            $("#org_name").val(name);
+            refreshTable(); // 选完班级后立即刷新表格
+        } else {
+            alert("请选择班级！");
+        }
+    }
+</script>
+</body>
+</html>
