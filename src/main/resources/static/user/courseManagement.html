@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>课程管理</title>
-    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.staticfile.org/bootstrap-table/1.18.3/bootstrap-table.min.css" rel="stylesheet">
-    <link href="https://cdn.staticfile.org/zTree.v3/3.5.29/css/zTreeStyle/zTreeStyle.min.css" rel="stylesheet">
+    <link href="../js/bootstrap-3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../js/bootstrap-table/dist/bootstrap-table.min.css" rel="stylesheet">
+    <link href="../js/bootstrap-tree/css/bootstrapStyle/bootstrapStyle.css" type="text/css" rel="stylesheet">
 
     <style>
         body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #fcfcfc; }
@@ -83,11 +83,13 @@
     </div>
 </div>
 
-<script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
-<script src="https://cdn.staticfile.org/bootstrap-table/1.18.3/bootstrap-table.min.js"></script>
-<script src="https://cdn.staticfile.org/bootstrap-table/1.18.3/locale/bootstrap-table-zh-CN.min.js"></script>
-<script src="https://cdn.staticfile.org/zTree.v3/3.5.29/js/jquery.ztree.all.min.js"></script>
+<script src="/js/jquery.min.js"></script>
+<script src="/js/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+<script src="/js/bootstrap-table/dist/bootstrap-table.min.js"></script>
+<script src="/js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.core.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.excheck.js"></script>
+<script type="text/javascript" src="../js/bootstrap-tree/js/jquery.ztree.exedit.js"></script>
 
 <script type="text/javascript">
     // 【配置项】如果项目不是部署在根目录，请在这里设置项目名 (例如 "/myProject")
@@ -114,9 +116,10 @@
         });
 
         $("#add_org").click(function(){
-            get_tree();
-            // 初始化 ZTree
+            get_tree(); // 获取数据
+            // 初始化树
             $.fn.zTree.init($("#add_tree"), setting, window.zNodes);
+            // 弹出模态框
             $('#addTree_modal').modal('show');
         });
     });
@@ -249,41 +252,48 @@
         var data = $("#mytab").bootstrapTable('getData');
         var str = "";
 
+        // 获取当前选中的学期，传给后端以确保更新准确
+        var currentSemester = $("#semester").val();
+
         for(var i=0; i<data.length; i++){
             var cnumber = data[i].cnumber;
-            // 获取输入框的值
-            var val = $("#endingtime"+i).val();
-            // 将 "T" 替换回空格，以便存入数据库: "2023-01-01T12:00" -> "2023-01-01 12:00"
+            var val = $("#endingtime"+i).val(); // 获取输入框的值
+
             if(val) {
+                // 将 "T" 替换回空格: "2023-01-01T12:00" -> "2023-01-01 12:00"
                 var c_endingtime = val.replace("T", " ");
-                // 如果后端严格要求秒数，补全 :00
                 if(c_endingtime.split(":").length === 2) {
-                    c_endingtime += ":00";
+                    c_endingtime += ":00"; // 补全秒
                 }
+                // 拼接格式： cnumber,time>
                 str += cnumber + "," + c_endingtime + ">";
             }
         }
 
         if(str === "") {
-            // 如果没有需要保存的数据，可以在这里加提示，原逻辑未加
+            alert("没有需要保存的时间数据");
+            return;
         }
 
         $.ajax({
             type: "post",
             url: CTX_PATH + "/curriculum/updateEndingtime.do",
-            data: { str: str },
+            // 关键修改：传递 str 和 semester
+            data: {
+                str: str,
+                semester: currentSemester
+            },
             success: function(res) {
-                // 兼容处理：无论返回字符串还是JSON对象
                 var result = (typeof res === 'string') ? JSON.parse(res) : res;
                 if(result.success === false){
                     alert("截止时间修改失败");
                 } else {
                     alert("保存成功");
-                    refreshTable(); // 刷新表格
+                    refreshTable();
                 }
             },
             error: function(){
-                alert("获取数据失败");
+                alert("请求失败，请检查网络或联系管理员");
             }
         });
     }
@@ -346,17 +356,23 @@
 
     // 5. 跳转到全部成绩
     function total_score() {
-        window.location.href = CTX_PATH + "/curriculum/toTotalScore.do";
+        window.location.href = CTX_PATH + "totalScore.html";
     }
 
-    // --- ZTree 树形菜单配置 ---
+    // --- 1. ZTree 配置 (完全参考 stContent.html) ---
     var setting = {
+        view: {
+            selectedMulti: false // 禁止多选
+        },
         check: {
             enable: true,
-            chkboxType: { "Y": "s", "N": "s" } // 勾选父子节点的关联关系
+            chkboxType: { "Y": "s", "N": "s" } // 勾选父节点自动勾选子节点
         },
         data: {
             simpleData: { enable: true }
+        },
+        edit: {
+            enable: false
         },
         callback: {
             onCheck: onCheck
@@ -365,7 +381,7 @@
 
     var zNodes = "";
 
-    // 获取班级树数据
+    // --- 2. 获取数据 ---
     function get_tree() {
         $.ajax({
             type: "post",
@@ -373,6 +389,7 @@
             async: false,
             dataType: 'json',
             success: function(res) {
+                // stContent 中数据直接在 res.tree
                 window.zNodes = res.tree;
             },
             error: function(){
@@ -381,41 +398,50 @@
         });
     }
 
-    // 树节点勾选事件
+    // --- 3. 勾选回调 (参考 stContent 逻辑) ---
     function onCheck(e, treeId, treeNode) {
-        var zTree = $.fn.zTree.getZTreeObj("add_tree");
-        // 获取所有被勾选的节点
-        var nodes = zTree.getCheckedNodes(true);
+        // 使用过滤器获取所有被勾选的节点
+        var zTree = $.fn.zTree.getZTreeObj("add_tree").getNodesByFilter(filter);
 
         var ids = "";
         var names = "";
 
-        // 还原原 JSP 的循环拼接逻辑
-        for (var i = 0; i < nodes.length; i++) {
-            if (nodes[i].id != null) {
-                ids += nodes[i].id + (i === nodes.length - 1 ? "" : ",");
+        for (var i = 0; i < zTree.length; i++) {
+            // 拼接 ID
+            if (zTree[i].id != null) {
+                ids += (i === (zTree.length - 1)) ? zTree[i].id : zTree[i].id + ",";
             }
-            if (nodes[i].name != null) {
-                names += nodes[i].name + (i === nodes.length - 1 ? "" : ",");
+            // 拼接 Name
+            if (zTree[i].name != null) {
+                names += (i === (zTree.length - 1)) ? zTree[i].name : zTree[i].name + ",";
             }
         }
+
         $("#ztreesname").val(names);
         $("#ztreeid").val(ids);
     }
 
-    // 确认选择班级
+    // 辅助过滤函数
+    function filter(node) {
+        return (node.checked == true);
+    }
+
+    // --- 4. 点击确定按钮 ---
     function selection() {
         var id = $("#ztreeid").val();
         var name = $("#ztreesname").val();
-        if(id && name){
+
+        if(id != "" && name != ""){
             $("#addTree_modal").modal('hide');
             $("#orgid").val(id);
             $("#org_name").val(name);
-            refreshTable(); // 选完班级后立即刷新表格
+            refreshTable(); // 选中后刷新列表
         } else {
             alert("请选择班级！");
         }
     }
+
+
 </script>
 </body>
 </html>

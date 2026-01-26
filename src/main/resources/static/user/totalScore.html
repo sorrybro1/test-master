@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>全部成绩</title>
+    <link href="../js/bootstrap-3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../js/bootstrap-table/dist/bootstrap-table.min.css" rel="stylesheet">
+
+    <style>
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #fcfcfc; }
+        /* 页面顶部留白，避开导航栏 */
+        .page-wrapper { margin-top: 60px; }
+        .panel-heading { font-weight: bold; background-color: #f5f5f5; }
+
+        /* 调整面包屑链接颜色 */
+        .panel-heading a { color: #337ab7; text-decoration: none; }
+        .panel-heading a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid page-wrapper">
+    <div class="row">
+        <div id="nav-placeholder"></div>
+
+        <div class="col-xs-10">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <a href="courseManagement.html">课程管理</a> / <span>全部成绩</span>
+                </div>
+
+                <div class="panel-body">
+                    <div id="toolbar" class="btn-group">
+                        <button onclick="excelTotalScore()" class="btn btn-success" type="button">
+                            <span class="glyphicon glyphicon-export"></span> 导出Excel
+                        </button>
+                    </div>
+
+                    <div style="float: right; margin-bottom: 10px;" class="form-inline">
+                        <label for="semester" style="font-weight: normal; margin-right: 5px;">学期/批次：</label>
+                        <select id="semester" class="form-control" style="min-width: 160px;">
+                        </select>
+                    </div>
+
+                    <table id="mytab" class="table table-hover"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+<script src="../js/bootstrap-table/dist/bootstrap-table.min.js"></script>
+<script src="../js/bootstrap-table/dist/locale/bootstrap-table-zh-CN.min.js"></script>
+
+<script type="text/javascript">
+    // 项目路径配置
+    var CTX_PATH = "";
+
+    $(function () {
+        // 1. 加载侧边栏
+        $("#nav-placeholder").load("../common/nav_per.html", function() {
+            setTimeout(function(){
+                // 设置侧边栏高亮 (根据实际情况调整)
+                $(".sidebar-nav a").removeClass("active");
+                // 假设“全部成绩”没有独立菜单，通常高亮“课程管理”
+                $(".sidebar-nav a[href*='courseManagement']").addClass("active");
+            }, 100);
+        });
+
+        // 2. 初始化数据
+        getTotalScoreTime(); // 加载下拉框
+        initTable();         // 加载表格
+
+        // 3. 监听筛选变化
+        $("#semester").change(function(){
+            refreshTable();
+        });
+    });
+
+    // --- 加载学期/批次下拉框 ---
+    function getTotalScoreTime() {
+        $.ajax({
+            type: "post",
+            url: CTX_PATH + "/curriculum/getTotalScoreTime",
+            async: false,
+            success: function(data) {
+                // 后端返回的是 <option>... HTML 字符串
+                var res = (typeof data === 'string' && data.startsWith("{")) ? JSON.parse(data) : data;
+                // 如果后端返回的是 JSON 字符串包着的 HTML，需要判断
+                if(typeof res === 'string') {
+                    $("#semester").html(res);
+                } else {
+                    $("#semester").html(res); // 容错
+                }
+            },
+            error: function() {
+                console.error("获取学期数据失败");
+            }
+        });
+    }
+
+    // --- 初始化表格 ---
+    function initTable() {
+        $('#mytab').bootstrapTable({
+            method: 'post',
+            url: CTX_PATH + "/curriculum/getTotalScoreList",
+            striped: true,
+            dataType: "json",
+            pagination: true,
+            sidePagination: 'server',
+            pageList: [10, 20, 50, 100],
+            pageSize: 10,
+            pageNumber: 1,
+            toolbar: '#toolbar', // 指定工具栏
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            queryParams: function(params) {
+                return {
+                    limit: params.limit,
+                    offset: params.offset,
+                    // 【重要】后端 Controller 接收的参数名为 'time'，而非 'semester'
+                    time: $("#semester").val()
+                };
+            },
+            columns: [
+                {
+                    title: '序号',
+                    align: 'center',
+                    width: 50,
+                    formatter: function (value, row, index) {
+                        var options = $('#mytab').bootstrapTable('getOptions');
+                        return options.pageSize * (options.pageNumber - 1) + index + 1;
+                    }
+                },
+                { title: '学号', align: 'center', field: 'snumber' },
+                { title: '姓名', align: 'center', field: 'sname' },
+                { title: '学院', align: 'center', field: 'college' },
+                { title: '专业', align: 'center', field: 'profession' },
+                { title: '班级', align: 'center', field: 'class_name' },
+                { title: '实验项目', align: 'center', field: 'cname' },
+                {
+                    title: '分数',
+                    align: 'center',
+                    field: 'total_points',
+                    formatter: function(value) {
+                        return value ? value : 0;
+                    }
+                }
+            ]
+        });
+    }
+
+    // --- 刷新表格 ---
+    function refreshTable() {
+        $('#mytab').bootstrapTable('refresh');
+    }
+
+    // --- 导出 Excel ---
+    function excelTotalScore() {
+        // 注意：原 Controller 的导出接口没有接收参数，导出的是全部数据
+        // 如果需要按学期导出，需要确认后端是否支持接收 time 参数
+        // 这里保留原逻辑
+        var semester = $("#semester").val();
+        window.location.href = CTX_PATH + "/curriculum/excelTotalScore?time=" + encodeURI(encodeURI(semester));
+    }
+</script>
+</body>
+</html>

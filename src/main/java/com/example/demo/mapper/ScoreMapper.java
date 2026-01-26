@@ -34,7 +34,7 @@ public interface ScoreMapper extends BaseMapper<Score> {
      * [对应 /getTotalScoreTime.do]
      * 获取总成绩统计里涉及的所有学期/批次
      */
-    List<String> selectTotalScoreTimes();
+    List<LocalDateTime> selectTotalScoreTimes();
 
     // ==========================================
     // 2. 课程管理 (Curriculum)

@@ -108,18 +108,48 @@ public class CurriculumController {
     }
 
     /**
-     * [补全] 总成绩统计页面的学期/批次下拉
-     * 对应旧代码: /getTotalScoreTime
+     * [修复] 总成绩统计页面的学期/批次下拉
+     * 修复了 ClassCastException (LocalDateTime -> String)
      */
-    @PostMapping(value = "/getTotalScoreTime.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/getTotalScoreTime", produces = "application/json;charset=UTF-8")
     public String getTotalScoreTime() throws Exception {
-        // 旧代码逻辑与 getSemester 类似，可能是获取 total_score 表里的批次时间
-        List<String> times = stScoreMapper.selectTotalScoreTimes();
+        // 1. 接收类型改为 List<LocalDateTime>，因为 MyBatis 返回的是时间对象
+        // 注意：如果您的 Mapper 接口定义是 List<String>，请改为 List<LocalDateTime> 或 List<?>，
+        // 但通常 MyBatis 实际返回的对象类型由 SQL 和数据库列类型决定。
+        List<LocalDateTime> list = stScoreMapper.selectTotalScoreTimes();
+
+        // 2. 使用 Set 去重并排序
+        Set<String> semesters = new TreeSet<>(Collections.reverseOrder());
+
+        // 3. 遍历时间对象，转换为字符串 (复用 conversionSemester 方法)
+        // 如果 list 为 null 或空，循环会自动跳过
+        if (list != null) {
+            for (Object obj : list) {
+                // 兼容处理：防止某些极端情况下 MyBatis 真的返回了 String 或 Timestamp
+                if (obj instanceof LocalDateTime) {
+                    semesters.add(conversionSemester((LocalDateTime) obj));
+                } else if (obj != null) {
+                    // 如果已经是字符串或其他类型，尝试转换或直接使用
+                    // 这里假设 conversionSemester 逻辑主要处理 LocalDateTime
+                    // 如果偶尔返回 Timestamp，可能需要 obj.toLocalDateTime()
+                    // 简单起见，这里假设主要是 LocalDateTime
+                    try {
+                        semesters.add(conversionSemester((LocalDateTime) obj));
+                    } catch (Exception e) {
+                        // 兜底：直接 toString
+                        semesters.add(obj.toString());
+                    }
+                }
+            }
+        }
+
+        // 4. 拼接 HTML 选项
         StringBuilder sb = new StringBuilder();
-        // 假设旧逻辑不需要默认选中，或者选中第一个
-        for (String t : times) {
-            sb.append("<option value='").append(escapeHtml(t)).append("'>")
-                    .append(escapeHtml(t)).append("</option>");
+        for (String s : semesters) {
+            // 简单转义防止 XSS
+            String safeS = escapeHtml(s);
+            sb.append("<option value='").append(safeS).append("'>")
+                    .append(safeS).append("</option>");
         }
         return objectMapper.writeValueAsString(sb.toString());
     }
@@ -187,25 +217,52 @@ public class CurriculumController {
     }
 
     /**
-     * 修改课程结课时间
+     * 批量修改课程结课时间
      * 对应旧代码: /updateEndingtime
+     * 前端传参: str="cnumber,time>cnumber,time>", semester="2025xxx"
      */
     @PostMapping("/updateEndingtime.do")
+    @Transactional(rollbackFor = Exception.class) // 建议添加事务，保证批量更新的一致性
     public Map<String, Object> updateEndingTime(
-            @RequestParam("cnumber") String cNumber,
-            @RequestParam("semester") String semester,
-            @RequestParam("time") String time
+            @RequestParam("str") String str,
+            @RequestParam(value = "semester", required = false) String semester
     ) {
         Map<String, Object> resp = new HashMap<>();
         try {
-            if (cNumber.contains(",")) cNumber = cNumber.split(",")[0];
-            if (semester.contains(",")) semester = semester.split(",")[0];
+            if (!StringUtils.hasText(str)) {
+                resp.put("success", false);
+                resp.put("msg", "数据为空");
+                return resp;
+            }
 
-            int rows = stScoreMapper.updateCourseEndingTime(cNumber, semester, time);
-            resp.put("success", rows > 0);
+            // 解析前端传来的格式: "1001,2023-01-01 12:00:00>1002,2023-01-01 12:00:00>"
+            String[] items = str.split(">");
+            int updateCount = 0;
+
+            for (String item : items) {
+                if (item.contains(",")) {
+                    // 分割 cnumber 和 time
+                    // 注意：如果时间里包含空格，split(",") 也能正常处理，因为 split 默认处理逗号
+                    String[] parts = item.split(",");
+                    if (parts.length >= 2) {
+                        String cNumber = parts[0];
+                        String time = parts[1];
+
+                        // 调用 Mapper 更新
+                        // 注意：如果您的 Mapper 不需要 semester 参数即可定位课程，可以传 null 或不传
+                        // 但为了数据安全，建议带上 semester
+                        stScoreMapper.updateCourseEndingTime(cNumber, semester, time);
+                        updateCount++;
+                    }
+                }
+            }
+
+            resp.put("success", true);
+            resp.put("msg", "成功更新 " + updateCount + " 条记录");
         } catch (Exception e) {
             e.printStackTrace();
             resp.put("success", false);
+            resp.put("msg", "系统异常");
         }
         return resp;
     }
@@ -521,7 +578,7 @@ public class CurriculumController {
      * [补全] 获取总成绩列表
      * 对应旧代码: /getTotalScoreList
      */
-    @PostMapping(value = "/getTotalScoreList.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/getTotalScoreList", produces = "application/json;charset=UTF-8")
     public Map<String, Object> getTotalScoreList(HttpServletRequest request) {
         Map<String, Object> resp = new HashMap<>();
         try {
@@ -547,7 +604,7 @@ public class CurriculumController {
      * 导出总成绩
      * 对应旧代码: /excelTotalScore
      */
-    @GetMapping("/excelTotalScore.do")
+    @GetMapping("/excelTotalScore")
     public void excelTotalScore(HttpServletResponse response) {
         try {
             List<Map<String, Object>> list = stScoreMapper.selectTotalScoreForExport();
