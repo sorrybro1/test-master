@@ -153,4 +153,32 @@ public interface ContentMapper extends BaseMapper<Content> {
 """)
     int updateContent(Map<String, Object> param);
 
+    @Select("""
+    <script>
+    SELECT DISTINCT
+        c.*,
+        t.name AS tName
+    FROM st_content c
+    LEFT JOIN st_type t ON c.tid = t.id
+    ORDER BY c.id DESC
+    LIMIT #{offset}, #{limit}
+    </script>
+""")
+    List<Content> getList(@Param("offset") int offset, @Param("limit") int limit);
+
+    @Select("""
+    <script>
+    SELECT c.*, t.name AS tName
+    FROM st_content c
+    LEFT JOIN st_type t ON c.tid = t.id
+            <where>
+          <if test='tid != null and tid != ""'>
+    c.tid = #{tid}
+          </if>
+        </where>
+    ORDER BY c.id DESC
+    </script>
+""")
+    List<Content> getListByTid(@Param("tid") String tid);
+
 }

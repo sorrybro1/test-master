@@ -49,7 +49,8 @@ public class ContentController {
         // 只查询必要的字段
         wrapper.select("id", "title", "tid");
         wrapper.orderByAsc("id");
-        return contentMapper.selectList(wrapper);
+        return contentMapper.getListByTid(tid);
+        //return contentMapper.selectList(wrapper);
     }
 
     @PostMapping("/detail")
