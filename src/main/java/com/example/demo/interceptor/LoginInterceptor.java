@@ -23,7 +23,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         String path2 = request.getRequestURI();
 
         //  给所有学生/教师页面添加禁止缓存的响应头
-        if (path.startsWith("/pages/") && !path.equals("/pages/login.html")) {
+        if (path.startsWith("/pages/") && !path.equals("/pages/login.html")|| path.startsWith("/user/")) {
             response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             response.setHeader("Pragma", "no-cache");
             response.setDateHeader("Expires", 0);

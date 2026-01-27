@@ -119,7 +119,7 @@
     function getCurriculumList() {
         $('#mytab').bootstrapTable({
             method : 'post',
-            url : ctx + "/content/list",
+            url : ctx + "/api/content/list",
             striped : true,
             dataType: "json",
             pagination : true,
@@ -147,7 +147,7 @@
     function getSemester() {
         $.ajax({
             type: "post",
-            url: ctx + "/content/getSemester",
+            url: ctx + "/api/content/getSemester",
             cache:false,
             async:false,
             success:function(data){
@@ -177,7 +177,7 @@
         if(semester==null||semester==""){ alert("实验学期不能为空！"); return; }
         $.ajax({
             type: "post",
-            url: ctx + "/content/establish?uid="+reportsIds+"&semester="+semester+"&orgid="+orgid,
+            url: ctx + "/api/content/establish?uid="+reportsIds+"&semester="+semester+"&orgid="+orgid,
             success: function (data) {
                 var res = $.parseJSON(data);
                 alert(res.msg);
@@ -197,7 +197,7 @@
     function get_tree() {
         $.ajax({
             type: "post",
-            url: ctx + "/stOrgCtr/getOrgInfo",
+            url: ctx + "/api/stOrgCtr/getOrgInfo",
             cache:false,
             async:false,
             dataType : 'json',

@@ -105,7 +105,7 @@
     function getLaboratoryReportList(cnumber) {
         $('#mytab').bootstrapTable({
             method : 'post',
-            url : CTX_PATH + "/curriculum/laboratoryReportList.do",
+            url : CTX_PATH + "/api/curriculum/laboratoryReportList.do",
             contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
             striped : true,
             dataType: "json",
@@ -299,7 +299,7 @@
         // 发送 AJAX 请求
         $.ajax({
             type: "post",
-            url: CTX_PATH + "/curriculum/saveScoring.do",
+            url: CTX_PATH + "/api/curriculum/saveScoring.do",
             contentType: "application/json;charset=utf-8",
             data: JSON.stringify(scoreList),
             success: function(res){
@@ -332,13 +332,13 @@
         }
 
         // 执行下载 (GET请求)
-        location.href = CTX_PATH + "/curriculum/downloadCheckLaboratoryReport.do?sco_id=" + sco_id;
+        location.href = CTX_PATH + "/api/curriculum/downloadCheckLaboratoryReport.do?sco_id=" + sco_id;
     }
 
     // --- 下载全部报告 ---
     function downloadLaboratoryReport() {
         var cnumber = $("#cnumber").val();
-        location.href = CTX_PATH + "/curriculum/downloadLaboratoryReport.do?cnumber=" + cnumber;
+        location.href = CTX_PATH + "/api/curriculum/downloadLaboratoryReport.do?cnumber=" + cnumber;
     }
 
 </script>

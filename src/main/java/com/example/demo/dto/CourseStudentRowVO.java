@@ -11,6 +11,7 @@ public class CourseStudentRowVO {
     private String cnumber;
     private Integer conid;
     private String cname;
+    private Long tid;
 
     // 前端 field='cname_url' 需要这个字段
     private String cnameUrl;

@@ -20,7 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Controller
-@RequestMapping("/content")
+@RequestMapping("/api/content")
 public class ContentController {
     @Autowired
     private ContentMapper contentMapper;

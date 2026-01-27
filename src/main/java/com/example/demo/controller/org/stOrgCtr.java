@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/stOrgCtr")
+@RequestMapping("/api/stOrgCtr")
 @RequiredArgsConstructor // 使用 Lombok 自动生成构造函数注入 mapper
 public class stOrgCtr {
 

@@ -90,9 +90,11 @@
         SELECT
         b.conid, b.cnumber, b.semester,
         b.cname, b.cdesc, b.c_endingtime,
-        a.sco_id, a.upload_file_name, a.total_points, a.degree_exp, a.degree_other
+        a.sco_id, a.upload_file_name, a.total_points, a.degree_exp, a.degree_other,
+        ct.title as cname, ct.tid
         FROM st_score a
         LEFT JOIN st_course b ON a.cnumber = b.cnumber
+        left join `20230415`.st_content ct ON b.conid=ct.id
         WHERE a.snumber = #{uid}
         <if test="startTime != null">
             AND b.semester &gt;= #{startTime}

@@ -130,7 +130,7 @@
         var semester = $("#semester").val();
 
         $('#mytab').bootstrapTable('refresh', {
-            url: CTX_PATH + "/curriculum/curriculumList.do",
+            url: CTX_PATH + "/api/curriculum/curriculumList.do",
             query: {
                 semester: semester,
                 orgid: orgid
@@ -142,7 +142,7 @@
     function getSemester() {
         $.ajax({
             type: "post",
-            url: CTX_PATH + "/curriculum/getSemester.do",
+            url: CTX_PATH + "/api/curriculum/getSemester.do",
             async: false,
             success: function(data) {
                 // 直接填充后端返回的 HTML (option标签)
@@ -158,7 +158,7 @@
     function getCurriculumList() {
         $('#mytab').bootstrapTable({
             method: 'post',
-            url: CTX_PATH + "/curriculum/curriculumList.do",
+            url: CTX_PATH + "/api/curriculum/curriculumList.do",
             striped: true, // 隔行变色
             dataType: "json",
             pagination: true, // 开启分页
@@ -201,7 +201,7 @@
                     }
                 },
                 { title: '学期', align: 'center', field: 'semester' },
-                { title: '班级', align: 'center', field: 'orgname' },
+                { title: '班级', align: 'center', field: 'org_name' },
                 {
                     title: '设置截止时间',
                     align: 'center',
@@ -211,13 +211,12 @@
                         // 后端通常返回 "2023-01-01 12:00:00"
                         // input type="datetime-local" 需要 "2023-01-01T12:00:00" 格式
                         var timeVal = "";
-                        if(value && value !== "null"){
-                            timeVal = value.replace(" ", "T");
-                            // 截取前16位 (yyyy-MM-ddThh:mm) 适配控件
-                            if(timeVal.length > 16) timeVal = timeVal.substring(0, 16);
+                        if(value && value !== "null" && value.length >= 10){
+                            // 只需要截取前10位 "2023-01-01"
+                            dateVal = value.substring(0, 10);
                         }
-                        return '<input type="datetime-local" class="form-control input-sm" id="endingtime'+index+'" value="'+timeVal+'">';
-                    }
+                        // 将 type="datetime-local" 改为 type="date"
+                        return '<input type="date" class="form-control input-sm" id="endingtime'+index+'" value="'+dateVal+'">';}
                 },
                 {
                     title: '打分/删除',
@@ -252,19 +251,18 @@
         var data = $("#mytab").bootstrapTable('getData');
         var str = "";
 
-        // 获取当前选中的学期，传给后端以确保更新准确
+        // 获取当前选中的学期
         var currentSemester = $("#semester").val();
 
         for(var i=0; i<data.length; i++){
             var cnumber = data[i].cnumber;
-            var val = $("#endingtime"+i).val(); // 获取输入框的值
+            var val = $("#endingtime"+i).val(); // 这里获取到的值格式为 "2023-01-01"
 
             if(val) {
-                // 将 "T" 替换回空格: "2023-01-01T12:00" -> "2023-01-01 12:00"
-                var c_endingtime = val.replace("T", " ");
-                if(c_endingtime.split(":").length === 2) {
-                    c_endingtime += ":00"; // 补全秒
-                }
+                // 【关键修改】自动补全时间为当天的 23:59:59
+                // 这样数据库存入的是完整时间，且符合“截止”的含义
+                var c_endingtime = val + " 23:59:59";
+
                 // 拼接格式： cnumber,time>
                 str += cnumber + "," + c_endingtime + ">";
             }
@@ -277,8 +275,7 @@
 
         $.ajax({
             type: "post",
-            url: CTX_PATH + "/curriculum/updateEndingtime.do",
-            // 关键修改：传递 str 和 semester
+            url: CTX_PATH + "/api/curriculum/updateEndingtime.do",
             data: {
                 str: str,
                 semester: currentSemester
@@ -306,7 +303,7 @@
         if(confirm("确认删除该课程吗？")){
             $.ajax({
                 type: "post",
-                url: CTX_PATH + "/curriculum/deleteCurriculum.do?str=" + str,
+                url: CTX_PATH + "/api/curriculum/deleteCurriculum.do?str=" + str,
                 success: function(data){
                     var res = (typeof data === 'string') ? JSON.parse(data) : data;
                     if(res.success === false){
@@ -339,7 +336,7 @@
         if(confirm("确认删除该课程吗？")){
             $.ajax({
                 type: "post",
-                url: CTX_PATH + "/curriculum/deleteCurriculum.do?str=" + str,
+                url: CTX_PATH + "/api/curriculum/deleteCurriculum.do?str=" + str,
                 success: function(data){
                     var res = (typeof data === 'string') ? JSON.parse(data) : data;
                     if(res.success === false){
@@ -385,7 +382,7 @@
     function get_tree() {
         $.ajax({
             type: "post",
-            url: CTX_PATH + "/stOrgCtr/getOrgInfo",
+            url: CTX_PATH + "/api/stOrgCtr/getOrgInfo",
             async: false,
             dataType: 'json',
             success: function(res) {

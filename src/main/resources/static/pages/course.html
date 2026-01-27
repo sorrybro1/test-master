@@ -250,11 +250,11 @@
 
 <script>
     var API = {
-        list:   "/content/list",
-        detail: "/content/detail",
+        list:   "/api/content/list",
+        detail: "/api/content/detail",
         downloadScode: "/api/file/download/scode",  // 源码下载新接口
         downloadSdll: "/api/file/download/sdll",  // 程序运行下载新接口
-        run:      "/toIndex/checkPayExe.do"
+        run:      "/api/toIndex/checkPayExe.do"
     };
 
     $(function () {
@@ -402,9 +402,31 @@
             success: function(data) {
                 var items = Array.isArray(data) ? data : (data && data.data ? data.data : []);
                 renderList(items);
+
+                // 【修改开始】支持通过 URL 中的 id 参数自动选中对应课程
                 if (items && items.length > 0) {
-                    $("#course-list .list-group-item").first().click();
+                    var targetId = getQueryString("id"); // 获取 URL 中的 id 参数
+                    var $targetItem = null;
+
+                    if (targetId) {
+                        // 尝试在列表中找到该 ID 的元素
+                        $targetItem = $("#course-list .list-group-item[data-id='" + targetId + "']");
+                    }
+
+                    if ($targetItem && $targetItem.length > 0) {
+                        // 1. 如果找到了目标ID，点击它
+                        $targetItem.click();
+
+                        // 2. (可选) 滚动侧边栏以确保该项可见
+                        var container = $("#sidebar-container");
+                        var scrollTo = $targetItem.offset().top - container.offset().top + container.scrollTop();
+                        container.animate({ scrollTop: scrollTo }, 200);
+                    } else {
+                        // 没传 ID 或 ID 不在列表中，默认点击第一个
+                        $("#course-list .list-group-item").first().click();
+                    }
                 }
+                // 【修改结束】
             },
             error: function(xhr) {
                 $("#course-list").html('<div class="list-group-item text-danger">目录加载失败</div>');

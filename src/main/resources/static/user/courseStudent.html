@@ -112,7 +112,7 @@
     // 监听学期变化
     $("#semester").change(function(){
       $('#courseTable').bootstrapTable('refresh', {
-        url : "/curriculum/courseStudentList.do?semester="+encodeURI($("#semester").val())
+        url : "/api/curriculum/courseStudentList.do?semester="+encodeURI($("#semester").val())
       });
     });
   });
@@ -121,7 +121,7 @@
   function getStdentSemester() {
     $.ajax({
       type: "post",
-      url: "/curriculum/getStdentSemester.do",
+      url: "/api/curriculum/getStdentSemester.do",
       success:function(data){
         // 假设返回 <option>HTML 或 JSON
         $("#semester").html(data);
@@ -137,7 +137,7 @@
   function getCourseStudentList() {
     $('#courseTable').bootstrapTable({
       method: 'post',
-      url: "/curriculum/courseStudentList.do",
+      url: "/api/curriculum/courseStudentList.do",
       dataType: "json",
       pagination: true,
       sidePagination: 'server',
@@ -243,7 +243,7 @@
 
     // 5. 发送 AJAX 请求
     $.ajax({
-      url: "/curriculum/uploadReport.do", // 现在的 URL 不需要拼参数了，都在 formData 里
+      url: "/api/curriculum/uploadReport.do", // 现在的 URL 不需要拼参数了，都在 formData 里
       type: 'POST',
       data: formData,
       processData: false, // 必须 false: 告诉jQuery不要处理数据

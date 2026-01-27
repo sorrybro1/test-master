@@ -83,7 +83,7 @@
     function getTotalScoreTime() {
         $.ajax({
             type: "post",
-            url: CTX_PATH + "/curriculum/getTotalScoreTime",
+            url: CTX_PATH + "/api/curriculum/getTotalScoreTime",
             async: false,
             success: function(data) {
                 // 后端返回的是 <option>... HTML 字符串
@@ -105,7 +105,7 @@
     function initTable() {
         $('#mytab').bootstrapTable({
             method: 'post',
-            url: CTX_PATH + "/curriculum/getTotalScoreList",
+            url: CTX_PATH + "/api/curriculum/getTotalScoreList",
             striped: true,
             dataType: "json",
             pagination: true,

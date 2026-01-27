@@ -32,7 +32,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 @RestController
-@RequestMapping("/curriculum")
+@RequestMapping("/api/curriculum")
 @RequiredArgsConstructor
 public class CurriculumController {
 
@@ -188,6 +188,46 @@ public class CurriculumController {
             // 调用 Mapper (Mapper 参数要改成 LocalDateTime)
             long total = stScoreMapper.countCurriculum(startTime, endTime); // XML 需要对应
             List<Map<String, Object>> rows = stScoreMapper.listCurriculum(startTime, endTime, offset, limit); // XML 需要对应
+            // 4. 【核心修复】遍历结果，将时间对象转为中文学期字符串
+            for (Map<String, Object> row : rows) {
+                // 优先取 "semester" 字段，因为您的 Mapper 似乎已经将其别名为 semester
+                Object timeObj = row.get("semester");
+
+                // 如果为空，尝试取 c_start_time 或 s_start_time 作为兜底
+                if (timeObj == null) timeObj = row.get("c_start_time");
+                if (timeObj == null) timeObj = row.get("s_start_time");
+
+                if (timeObj != null) {
+                    try {
+                        String semesterStr = "";
+                        if (timeObj instanceof LocalDateTime) {
+                            semesterStr = conversionSemester((LocalDateTime) timeObj);
+                        } else if (timeObj instanceof java.sql.Timestamp) {
+                            semesterStr = conversionSemester(((java.sql.Timestamp) timeObj).toLocalDateTime());
+                        } else if (timeObj instanceof String) {
+                            // 如果偶尔 MyBatis 将其转为了 String (如 "2025-11-01 00:00:00")，尝试解析
+                            // 这里简单处理：如果是字符串且包含T或空格，说明还没转成中文，尝试转换
+                            String ts = (String) timeObj;
+                            if (ts.contains("-")) {
+                                // 简单解析逻辑，或者直接忽略
+                                LocalDateTime dt = LocalDateTime.parse(ts.replace(" ", "T"));
+                                semesterStr = conversionSemester(dt);
+                            } else {
+                                semesterStr = ts; // 已经是中文或格式不对，保持原样
+                            }
+                        }
+
+                        // 【关键】覆盖原字段，确保前端拿到的是 "2025秋季学期"
+                        row.put("semester", semesterStr);
+
+                    } catch (Exception e) {
+                        // 转换失败，保持原值，避免报错
+                        row.put("semester", timeObj.toString());
+                    }
+                } else {
+                    row.put("semester", "");
+                }
+            }
 
             resp.put("total", total);
             resp.put("rows", rows);
@@ -321,8 +361,17 @@ public class CurriculumController {
         // ... 后续 URL 处理代码不变 ...
         String ctx = request.getContextPath();
         for (CourseStudentRowVO r : rows) {
-            String url = ctx + "/content/detail.do?id=" + (r.getConid() == null ? "" : r.getConid());
-            r.setCnameUrl("<a href='" + url + "'>" + escapeHtml(r.getCname()) + "</a>");
+
+            Long tid = r.getTid();  // 现在这里能取到值了
+            Long id = Long.valueOf(r.getConid());
+
+            // 构造跳转链接
+            String url = ctx + "/pages/course.html?tid=" + (tid == null ? "" : tid) + "&id=" + (id == null ? "" : id);
+
+            String linkHtml = "<a href='" + url + " style='color:#337ab7; text-decoration:none;'>"
+                    + escapeHtml(r.getCname())
+                    + "</a>";
+            r.setCnameUrl(linkHtml);
         }
         Map<String, Object> resp = new HashMap<>();
         resp.put("total", total);

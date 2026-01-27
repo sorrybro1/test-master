@@ -226,7 +226,7 @@
     function getNavigation(){
         $.ajax({
             type: "post",
-            url: CTX + "/classification/getNavigation.do",
+            url: CTX + "/api/classification/getNavigation.do",
             cache:false,
             async:true,
             success:function(raw){
