@@ -2,6 +2,7 @@ package com.example.demo.controller.user;
 
 import com.example.demo.dto.CourseStudentRowVO;
 import com.example.demo.entity.User;
+import com.example.demo.mapper.OrgCourseMapper;
 import com.example.demo.mapper.ScoreMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,6 +39,7 @@ public class CurriculumController {
 
     private final ScoreMapper stScoreMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final OrgCourseMapper orgCourseMapper;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -52,7 +54,7 @@ public class CurriculumController {
      * [补全] 教师/管理员端：获取所有学期下拉列表
      * 对应旧代码: /getSemester
      */
-    @PostMapping(value = "/getSemester.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/getSemester", produces = "application/json;charset=UTF-8")
     public String getSemester() throws Exception {
         // Mapper 返回 List<LocalDateTime>
         List<LocalDateTime> list = stScoreMapper.selectAllSemesters(); // 对应 XML 中的 selectAllSemesters
@@ -80,7 +82,7 @@ public class CurriculumController {
      * 学生端：获取该学生有课的学期下拉列表
      * 对应旧代码: /getStdentSemester
      */
-    @PostMapping(value = "/getStdentSemester.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/getStdentSemester", produces = "application/json;charset=UTF-8")
     public String getStdentSemester(HttpSession session) throws Exception {
         String uid = requireUid(session);
 
@@ -163,7 +165,7 @@ public class CurriculumController {
      * 对应旧代码: /curriculumList
      */
     // 2. [修复] 教师/管理员：课程列表 (处理字符串 "2025秋季学期" -> 时间范围)
-    @PostMapping(value = "/curriculumList.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/curriculumList", produces = "application/json;charset=UTF-8")
     public Map<String, Object> curriculumList(HttpServletRequest request) {
         Map<String, Object> resp = new HashMap<>();
         try {
@@ -243,7 +245,7 @@ public class CurriculumController {
      * [补全] 查看单门课程详情 (通常用于编辑回显)
      * 对应旧代码: /seeCurriculum
      */
-    @PostMapping(value = "/seeCurriculum.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/seeCurriculum", produces = "application/json;charset=UTF-8")
     public Map<String, Object> seeCurriculum(@RequestParam("id") Long id) {
         Map<String, Object> resp = new HashMap<>();
         try {
@@ -261,7 +263,7 @@ public class CurriculumController {
      * 对应旧代码: /updateEndingtime
      * 前端传参: str="cnumber,time>cnumber,time>", semester="2025xxx"
      */
-    @PostMapping("/updateEndingtime.do")
+    @PostMapping("/updateEndingtime")
     @Transactional(rollbackFor = Exception.class) // 建议添加事务，保证批量更新的一致性
     public Map<String, Object> updateEndingTime(
             @RequestParam("str") String str,
@@ -311,14 +313,62 @@ public class CurriculumController {
      * 删除课程
      * 对应旧代码: /deleteCurriculum
      */
-    @PostMapping("/deleteCurriculum.do")
-    public Map<String, Object> deleteCurriculum(@RequestParam("id") Long id) {
+    @PostMapping("/deleteCurriculum")
+    @Transactional(rollbackFor = Exception.class) // 【关键】事务控制
+    public Map<String, Object> deleteCurriculum(@RequestParam("str") String str) {
         Map<String, Object> resp = new HashMap<>();
         try {
-            stScoreMapper.deleteCurriculumById(id);
+            if (!StringUtils.hasText(str)) {
+                resp.put("success", false);
+                resp.put("msg", "参数为空");
+                return resp;
+            }
+
+            // 1. 解析参数 (兼容 ID 带逗号的情况)
+            String[] ids = str.split(",");
+            int successCount = 0;
+
+            for (String idStr : ids) {
+                if (!StringUtils.hasText(idStr)) continue;
+
+                try {
+                    String id = idStr.trim();
+
+                    // ==================================================
+                    // 步骤A：删除物理文件
+                    // ==================================================
+                     List<String> filesToDelete = stScoreMapper.selectFileNamesByCourseId(id);
+                     if (filesToDelete != null) {
+                         Path reportsDir = Paths.get(uploadDir, "reports");
+                         for (String fileName : filesToDelete) {
+                             try {
+                                 Files.deleteIfExists(reportsDir.resolve(fileName));
+                             } catch (Exception ignored) {}
+                         }
+                     }
+
+                    // ==================================================
+                    // 步骤B：删除数据库记录
+                    // ==================================================
+                    // 1. 删除成绩表/选课表关联
+                    stScoreMapper.deleteCurriculumById(id);
+                    // 2. 删除课程主表
+                    orgCourseMapper.deleteByCourseid(id);
+
+                    successCount++;
+                } catch (NumberFormatException nfe) {
+                    System.err.println("非法的ID格式: " + idStr);
+                }
+            }
+
             resp.put("success", true);
+            resp.put("msg", "成功删除 " + successCount + " 条记录");
         } catch (Exception e) {
+            e.printStackTrace();
             resp.put("success", false);
+            resp.put("msg", "删除失败：" + e.getMessage());
+            // 抛出运行时异常以触发事务回滚
+            throw new RuntimeException(e);
         }
         return resp;
     }
@@ -331,7 +381,7 @@ public class CurriculumController {
      * 学生课程列表
      * 对应旧代码: /courseStudentList
      */
-    @PostMapping(value = "/courseStudentList.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/courseStudentList", produces = "application/json;charset=UTF-8")
     public Map<String, Object> courseStudentList(HttpServletRequest request, HttpSession session,
                                                  @RequestParam(required = false) String semester) throws Exception {
         String uid = requireUid(session);
@@ -407,7 +457,7 @@ public class CurriculumController {
      * 上传实验报告
      * 对应旧代码: /uploadReport
      */
-    @PostMapping(value = "/uploadReport.do", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/uploadReport", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Map<String, Object> uploadReport(
             HttpSession session,
             @RequestParam("sco_id") Long scoId,
@@ -469,7 +519,7 @@ public class CurriculumController {
      * 获取实验报告列表
      * 对应旧代码: /laboratoryReportList
      */
-    @PostMapping(value = "/laboratoryReportList.do", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/laboratoryReportList", produces = "application/json;charset=UTF-8")
     public Map<String, Object> laboratoryReportList(HttpServletRequest request) {
         Map<String, Object> resp = new HashMap<>();
         try {
@@ -495,7 +545,7 @@ public class CurriculumController {
      * 保存评分 (接收 JSON 列表)
      * 对应前端: JSON.stringify(scoreList)
      */
-    @PostMapping("/saveScoring.do")
+    @PostMapping("/saveScoring")
     @Transactional(rollbackFor = Exception.class)
     // 【关键】使用 @RequestBody 接收 JSON 数组
     public Map<String, Object> saveScoring(@RequestBody List<Map<String, Object>> scoreList) {
@@ -535,7 +585,7 @@ public class CurriculumController {
      * [补全] 批量打包下载实验报告 (ZIP)
      * 对应旧代码: /downloadCheckLaboratoryReport
      */
-    @GetMapping("/downloadCheckLaboratoryReport.do")
+    @GetMapping("/downloadCheckLaboratoryReport")
     public void downloadCheckLaboratoryReport(
             HttpServletResponse response,
             // 假设前端传递的是逗号分隔的 ID 字符串，或者 scoop_ids[]
@@ -591,7 +641,7 @@ public class CurriculumController {
      * [补全] 单个下载实验报告
      * 对应旧代码: /downloadLaboratoryReport
      */
-    @GetMapping("/downloadLaboratoryReport.do")
+    @GetMapping("/downloadLaboratoryReport")
     public void downloadLaboratoryReport(HttpServletResponse response, @RequestParam("sco_id") Long scoId) {
         try {
             // 获取单个文件信息

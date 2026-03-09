@@ -24,7 +24,7 @@ public class IndexController {
      * 对应原代码：/toIndex/getuserManagement.do
      * 作用：接收 tid，把用户带到静态 HTML 页面
      */
-    @GetMapping("/toIndex/getuserManagement.do")
+    @GetMapping("/toIndex/getuserManagement")
     public void toUserManagementPage(@RequestParam(value = "tid", required = false) String tid,
                                      HttpServletResponse response) throws IOException {
         // 重定向到静态页面，并透传 tid 参数

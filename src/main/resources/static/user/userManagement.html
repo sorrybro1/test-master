@@ -226,7 +226,7 @@
     function getNavigation(){
         $.ajax({
             type: "post",
-            url: CTX + "/api/classification/getNavigation.do",
+            url: CTX + "/api/classification/getNavigation",
             cache:false,
             async:true,
             success:function(raw){
@@ -331,7 +331,7 @@
 
         $.ajax({
             type:"post",
-            url: CTX + "/api/users/updatePwd1.do?pwd1=" + encodeURIComponent(pwd1) + "&pwd=" + encodeURIComponent(pwd),
+            url: CTX + "/api/users/updatePwd1?pwd1=" + encodeURIComponent(pwd1) + "&pwd=" + encodeURIComponent(pwd),
             dataType:"json",
             success:function(json){
                 if(json && json.success){
@@ -370,7 +370,7 @@
 
         $.ajax({
             type: "post",
-            url: CTX + "/api/users/updateUser.do",
+            url: CTX + "/api/users/updateUser",
             // 关键：用 data 对象，不要自己拼 querystring，更不要 encodeURI(encodeURI)
             data: {
                 name: $("#name").val(),

@@ -11,12 +11,29 @@
         ORDER BY semester DESC
     </select>
 
+<!--    <select id="selectStudentSemesters" resultType="java.time.LocalDateTime">-->
+<!--        SELECT DISTINCT b.semester-->
+<!--        FROM st_score a-->
+<!--                 LEFT JOIN st_course b ON a.cnumber = b.cnumber-->
+<!--        WHERE a.snumber = #{uid} AND b.semester IS NOT NULL-->
+<!--        ORDER BY b.semester DESC-->
+<!--    </select>-->
     <select id="selectStudentSemesters" resultType="java.time.LocalDateTime">
-        SELECT DISTINCT b.semester
-        FROM st_score a
-                 LEFT JOIN st_course b ON a.cnumber = b.cnumber
-        WHERE a.snumber = #{uid} AND b.semester IS NOT NULL
-        ORDER BY b.semester DESC
+        SELECT DISTINCT c.semester
+        FROM st_orgrole r
+                 JOIN st_orgcourse oc ON r.orgid = oc.orgid
+                 JOIN st_course c ON c.cnumber = oc.courseid
+        WHERE r.userid = #{uid}
+          AND c.semester IS NOT NULL
+        ORDER BY c.semester DESC
+    </select>
+
+
+    <!-- 学生查询学期  -->
+    <select id="getStdentSemester" parameterType="String" resultType="String" >
+        SELECT b.semester FROM st_score a
+                                   LEFT JOIN st_course b ON a.cnumber=b.cnumber
+        WHERE a.snumber=#{snumber}
     </select>
 
     <select id="selectTotalScoreTimes" resultType="java.time.LocalDateTime">
@@ -70,8 +87,16 @@
         UPDATE st_course SET c_endingtime = #{time} WHERE cnumber = #{cNumber}
     </update>
     <delete id="deleteCurriculumById">
-        DELETE FROM st_course WHERE id = #{id}
+        DELETE FROM st_course WHERE cnumber = #{id}
     </delete>
+
+    <select id="selectFileNamesByCourseId" resultType="string">
+        SELECT s.upload_file_name
+        FROM st_score s
+                 LEFT JOIN st_orgcourse c ON s.cnumber = c.orgid  WHERE c.courseid = #{courseId}
+                                                                    AND s.upload_file_name IS NOT NULL
+                                                                    AND s.upload_file_name != ''
+    </select>
 
     <select id="countCourseStudent" resultType="long">
         SELECT count(a.sco_id)

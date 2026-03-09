@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("st_score")
 public class Score {
-    @TableId
+    @TableId(value = "sco_id",type = IdType.AUTO)
     private Long scoId;              // sco_id
 
     private String cnumber;          // cnumber

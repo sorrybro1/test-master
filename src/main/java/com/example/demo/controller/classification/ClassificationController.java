@@ -17,9 +17,8 @@ public class ClassificationController {
     @Autowired
     private ClassificationMapper classificationMapper;
 
-    @PostMapping("/getNavigation.do")
+    @PostMapping("/getNavigation")
     public List<Classification> getNavigation() {
-        // 既然用户很在意 SQL，我们加上排序，通常这种菜单都有个 sort 字段或者按 id 排序
         QueryWrapper<Classification> wrapper = new QueryWrapper<>();
 
         // 尝试按 id 排序，保证菜单顺序固定

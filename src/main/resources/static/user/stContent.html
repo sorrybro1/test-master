@@ -178,9 +178,10 @@
         $.ajax({
             type: "post",
             url: ctx + "/api/content/establish?uid="+reportsIds+"&semester="+semester+"&orgid="+orgid,
+            dataType : 'json',
             success: function (data) {
-                var res = $.parseJSON(data);
-                alert(res.msg);
+                //var res = $.parseJSON(data);
+                alert(data.msg);
                 window.location.href = ctx + 'stContent.html';
             }
         });

@@ -30,6 +30,7 @@ public interface ScoreMapper extends BaseMapper<Score> {
      */
     List<LocalDateTime> selectStudentSemesters(@Param("uid") String uid);
 
+    List<LocalDateTime> getStdentSemester(@Param("uid") String uid);
     /**
      * [对应 /getTotalScoreTime.do]
      * 获取总成绩统计里涉及的所有学期/批次
@@ -69,7 +70,10 @@ public interface ScoreMapper extends BaseMapper<Score> {
      * 注意：不仅要删 st_course，还要删 st_orgcourse(绑定关系) 和 st_score(成绩)
      * 这里先定义删主表，XML 中可以配置多语句或者在 Service 层处理，这里假设只删课程
      */
-    void deleteCurriculumById(@Param("id") Long id);
+    void deleteCurriculumById(@Param("id") String id);
+
+    // 获取指定课程ID下所有非空的上传文件名
+    List<String> selectFileNamesByCourseId(String courseId);
 
     // ==========================================
     // 3. 学生端课程 (CourseStudent)

@@ -106,7 +106,7 @@ public class Usercontroller {
     }
 
     // 保存个人资料
-    @PostMapping("/updateUser.do")
+    @PostMapping("/updateUser")
     public Map<String, Object> updateUser(@RequestParam(required = false) String name,
                                           @RequestParam(required = false) String sex,
                                           @RequestParam(required = false) String college,
@@ -152,7 +152,7 @@ public class Usercontroller {
     }
 
     // 修改密码：/user/updatePwd1.do?pwd1=旧&pwd=新
-    @PostMapping("/updatePwd1.do")
+    @PostMapping("/updatePwd1")
     public Map<String, Object> updatePwd1(@RequestParam("pwd1") String oldPwd,
                                           @RequestParam("pwd") String newPwd,
                                           HttpSession session) {
