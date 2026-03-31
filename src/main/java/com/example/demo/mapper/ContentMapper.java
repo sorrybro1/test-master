@@ -167,17 +167,22 @@ public interface ContentMapper extends BaseMapper<Content> {
     List<Content> getList(@Param("offset") int offset, @Param("limit") int limit);
 
     @Select("""
-    <script>
-    SELECT c.*, t.name AS tName
-    FROM st_content c
-    LEFT JOIN st_type t ON c.tid = t.id
-            <where>
-          <if test='tid != null and tid != ""'>
+<script>
+SELECT
+    c.id,
+    c.tid,
+    c.pid,
+    c.title,
+    t.name AS tName
+FROM st_content c
+LEFT JOIN st_type t ON c.tid = t.id
+<where>
+  <if test='tid != null and tid != ""'>
     c.tid = #{tid}
-          </if>
-        </where>
-    ORDER BY c.id DESC
-    </script>
+  </if>
+</where>
+ORDER BY c.id DESC
+</script>
 """)
     List<Content> getListByTid(@Param("tid") String tid);
 
