@@ -79,7 +79,7 @@ public class AuthController {
         session.setAttribute("userId", user.getId());
         session.setAttribute("username", user.getUsername());
         session.setAttribute("role", user.getRole());
-        session.setMaxInactiveInterval(30 * 60);
+        session.setMaxInactiveInterval(60 * 60 * 24 * 365 * 10);
 
         UserInfoDTO dto = new UserInfoDTO();
         dto.setId(user.getId());
