@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>课程实验详情</title>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.min.css">
+    <link rel="stylesheet" href="../js/bootstrap-3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../js/prettify.min.css">
 
     <link rel="stylesheet" href="../css/top.css">
     <link rel="stylesheet" href="../css/index.css">
@@ -244,7 +244,7 @@
 </div>
 
 <script src="../js/jquery.min.js"></script>
-<script src="../js/bootstrap.min.js"></script>
+<script src="../js/bootstrap-3.3.7/js/bootstrap.min.js"></script>
 <script src="../js/prettify.min.js"></script>
 <script src="../js/student-common.js"></script>
 
@@ -423,7 +423,7 @@
                         container.animate({ scrollTop: scrollTo }, 200);
                     } else {
                         // 没传 ID 或 ID 不在列表中，默认点击第一个
-                        //$("#course-list .list-group-item").first().click();
+                        $("#course-list .list-group-item").first().click();
                     }
                 }
                 // 【修改结束】
