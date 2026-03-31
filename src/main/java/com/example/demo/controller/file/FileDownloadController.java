@@ -19,6 +19,9 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("/api/file")
 @RequiredArgsConstructor
@@ -148,10 +151,13 @@ public class FileDownloadController {
             // 7. 根据文件扩展名设置Content-Type
             String contentType = getContentType(fileName);
 
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + fileName + "\"")
+                            "attachment; filename=\"" + fileName + "\"; filename*=UTF-8''" + encodedFileName)
                     .header("X-File-Name", fileName)
                     .header("X-File-Size", String.valueOf(resource.contentLength()))
                     .body(resource);

@@ -133,21 +133,24 @@ public class AdminContentEditController {
         if (file == null || file.isEmpty()) return null;
 
         String original = file.getOriginalFilename();
-        String ext = "";
-        if (original != null) {
-            String clean = original.replace("\\", "/");
-            clean = clean.substring(clean.lastIndexOf('/') + 1);
-            int dot = clean.lastIndexOf('.');
-            if (dot >= 0 && dot < clean.length() - 1) ext = clean.substring(dot);
+        if (original == null || original.trim().isEmpty()) {
+            throw new IOException("文件名不能为空");
         }
 
-        String name = System.currentTimeMillis() + "_" + (100000 + RNG.nextInt(900000)) + ext;
+        // 只保留文件名，防止携带路径
+        String cleanName = original.replace("\\", "/");
+        cleanName = cleanName.substring(cleanName.lastIndexOf('/') + 1);
 
         Path dir = Paths.get(uploadDir, subDir).toAbsolutePath().normalize();
         Files.createDirectories(dir);
-        Path target = dir.resolve(name).normalize();
-        file.transferTo(target);
 
-        return "/uploads/" + subDir + "/" + name;
+        Path target = dir.resolve(cleanName).normalize();
+
+        // 防止路径穿越
+        if (!target.startsWith(dir)) {
+            throw new IOException("非法文件名");
+        }
+        file.transferTo(target);
+        return "/uploads/" + subDir + "/" + cleanName;
     }
 }
