@@ -63,7 +63,7 @@ public class AdminAuthController {
         session.setAttribute("adminLogin", true);
         session.setAttribute("role", user.getRole());
         session.setAttribute("user", user);
-        session.setMaxInactiveInterval(30 * 60);
+        session.setMaxInactiveInterval(60 * 60 * 24 * 365 * 10);
 
         UserInfoDTO dto = new UserInfoDTO();
         dto.setId(user.getId());

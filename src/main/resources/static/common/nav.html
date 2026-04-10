@@ -41,7 +41,7 @@
             url: "/api/classification/getNavigation", // 绝对路径
             dataType: "json", // 明确接收 JSON
             cache: false,
-            async: false,
+            async: true,
             success:function(data){
                 // data 是后端返回的 List<Classification>，格式如: [{id:1, name:"基础算法"}, ...]
                 var htmlContent = "";

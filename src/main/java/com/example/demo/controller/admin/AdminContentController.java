@@ -90,15 +90,22 @@ public class AdminContentController {
         param.put("title", title.trim());
         param.put("objective", objective);
         param.put("type", type);
+//        param.put("experPurpose", experPurpose);
+//        param.put("experTheory", experTheory);
+//        param.put("ariParameter", ariParameter);
+//        param.put("ariFlow", ariFlow);
+//        param.put("comResults", comResults);
+
+        // BLOB 字段（codetext / content）
+        param.put("codetextBytes", codetext == null ? null : codetext.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        param.put("contentBytes", content == null ? null : content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+// 其他富文本字段直接存字符串，不转义
         param.put("experPurpose", experPurpose);
         param.put("experTheory", experTheory);
         param.put("ariParameter", ariParameter);
         param.put("ariFlow", ariFlow);
         param.put("comResults", comResults);
-
-        // BLOB 字段（codetext / content）
-        param.put("codetextBytes", codetext == null ? null : codetext.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        param.put("contentBytes", content == null ? null : content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         // 当前登录管理员 uid（你登录时 session 里保存了 uid）
         Object uidObj = session.getAttribute("uid");
