@@ -3,11 +3,15 @@ package com.example.demo.controller.admin;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.demo.entity.Org;
+import com.example.demo.entity.OrgCourse;
 import com.example.demo.entity.Orgrole;
+import com.example.demo.entity.Score;
 import com.example.demo.entity.User;
 import com.example.demo.mapper.AdminUserMapper;
+import com.example.demo.mapper.OrgCourseMapper;
 import com.example.demo.mapper.OrgMapper;
 import com.example.demo.mapper.OrgroleMapper;
+import com.example.demo.mapper.ScoreMapper;
 import com.example.demo.mapper.UserMapper;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +35,8 @@ public class AdminUserController {
     private final UserMapper userMapper;
     private final OrgroleMapper orgroleMapper;
     private final OrgMapper orgMapper;
+    private final OrgCourseMapper orgCourseMapper;
+    private final ScoreMapper scoreMapper;
 
     @PostMapping("/page")
     public Map<String, Object> pageUsers(
@@ -151,6 +157,7 @@ public class AdminUserController {
 
 
     @PostMapping("/create")
+    @Transactional
     public Map<String, Object> create(@RequestParam("username") String username,
                                       @RequestParam("role") Integer role,
                                       @RequestParam("passwd") String passwd,
@@ -204,6 +211,7 @@ public class AdminUserController {
             or.setUserid(uid);
             or.setOrgid(orgid.trim());
             orgroleMapper.insert(or);
+            initStudentCourseScores(uid, orgid.trim());
         }
 
         return Map.of("success", true, "msg", "创建成功");
@@ -307,7 +315,43 @@ public class AdminUserController {
         return Map.of("success", true, "msg", "初始化成功：" + updated + "，跳过：" + skipped);
     }
 
+    private void initStudentCourseScores(String uid, String orgId) {
+        if (uid == null || uid.trim().isEmpty() || orgId == null || orgId.trim().isEmpty()) {
+            return;
+        }
+
+        String studentUid = uid.trim();
+        String classOrgId = orgId.trim();
+        List<OrgCourse> orgCourses = orgCourseMapper.selectList(
+                new QueryWrapper<OrgCourse>().eq("orgid", classOrgId)
+        );
+        if (orgCourses == null || orgCourses.isEmpty()) {
+            return;
+        }
+
+        for (OrgCourse orgCourse : orgCourses) {
+            String courseId = orgCourse.getCourseid();
+            if (courseId == null || courseId.trim().isEmpty()) {
+                continue;
+            }
+
+            String cnumber = courseId.trim();
+            Long existed = scoreMapper.selectCount(new QueryWrapper<Score>()
+                    .eq("cnumber", cnumber)
+                    .eq("snumber", studentUid));
+            if (existed != null && existed > 0) {
+                continue;
+            }
+
+            Score score = new Score();
+            score.setCnumber(cnumber);
+            score.setSnumber(studentUid);
+            scoreMapper.insert(score);
+        }
+    }
+
     @PostMapping(value = "/import", produces = "text/plain;charset=UTF-8")
+    @Transactional
     public String importUsers(@RequestParam("importUserFile") MultipartFile file, HttpSession session) throws Exception {
         if (!isAdminLoggedIn(session)) {
             return "{\"success\":\"d\",\"msg\":\"管理员未登录\"}";
@@ -414,6 +458,7 @@ public class AdminUserController {
                     or.setUserid(uid);
                     or.setOrgid(orgId);
                     orgroleMapper.insert(or);
+                    initStudentCourseScores(uid, orgId);
                 }
 
                 ok++;
