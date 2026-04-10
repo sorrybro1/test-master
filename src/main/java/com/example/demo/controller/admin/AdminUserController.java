@@ -3,18 +3,22 @@ package com.example.demo.controller.admin;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.demo.entity.Org;
+import com.example.demo.entity.OrgCourse;
 import com.example.demo.entity.Orgrole;
+import com.example.demo.entity.Score;
 import com.example.demo.entity.User;
 import com.example.demo.mapper.AdminUserMapper;
+import com.example.demo.mapper.OrgCourseMapper;
 import com.example.demo.mapper.OrgMapper;
 import com.example.demo.mapper.OrgroleMapper;
+import com.example.demo.mapper.ScoreMapper;
 import com.example.demo.mapper.UserMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.transaction.annotation.Transactional;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.*;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
@@ -31,6 +35,8 @@ public class AdminUserController {
     private final UserMapper userMapper;
     private final OrgroleMapper orgroleMapper;
     private final OrgMapper orgMapper;
+    private final OrgCourseMapper orgCourseMapper;
+    private final ScoreMapper scoreMapper;
 
     @PostMapping("/page")
     public Map<String, Object> pageUsers(
@@ -45,7 +51,7 @@ public class AdminUserController {
             return Map.of("total", 0, "rows", List.of());
         }
 
-        //  多选 + 父节点包含子孙
+        // 多选 + 父节点包含子孙
         List<String> orgIds = buildOrgIdFilter(orgId);
 
         long total = adminUserMapper.countUsers(username, role, orgIds);
@@ -70,6 +76,7 @@ public class AdminUserController {
     }
 
     @PostMapping("/update")
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> update(@RequestParam("uid") String uid,
                                       @RequestParam(value = "passwd", required = false) String passwd,
                                       @RequestParam(value = "orgid", required = false) String orgid,
@@ -95,16 +102,24 @@ public class AdminUserController {
             changed = changed || rows > 0;
         }
 
-        if (user.getRole() == 1 && orgid != null && !orgid.isEmpty()) {
+        if (user.getRole() == 1 && orgid != null && !orgid.trim().isEmpty()) {
+            String targetOrgId = orgid.trim();
+
             orgroleMapper.delete(new QueryWrapper<Orgrole>().eq("userid", uid));
+
             Orgrole or = new Orgrole();
             or.setUserid(uid);
-            or.setOrgid(orgid);
+            or.setOrgid(targetOrgId);
             orgroleMapper.insert(or);
+
+            // 关键修复：学生换班或补录到班级后，补齐该班历史课程对应的成绩记录
+            initStudentScoresForOrg(uid, targetOrgId);
             changed = true;
         }
 
-        if (!changed) return Map.of("success", false, "msg", "信息未修改");
+        if (!changed) {
+            return Map.of("success", false, "msg", "信息未修改");
+        }
         return Map.of("success", true, "msg", "修改成功");
     }
 
@@ -113,7 +128,7 @@ public class AdminUserController {
         return (adminLogin instanceof Boolean) && (Boolean) adminLogin;
     }
 
-    //  orgId 支持：单个 "558" / 多个 "558,539"；并且父节点会包含子孙
+    // orgId 支持：单个 "558" / 多个 "558,539"；并且父节点会包含子孙
     private List<String> buildOrgIdFilter(String rawOrg) {
         if (rawOrg == null || rawOrg.trim().isEmpty()) return null;
 
@@ -149,8 +164,8 @@ public class AdminUserController {
         return new ArrayList<>(result);
     }
 
-
     @PostMapping("/create")
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> create(@RequestParam("username") String username,
                                       @RequestParam("role") Integer role,
                                       @RequestParam("passwd") String passwd,
@@ -190,8 +205,6 @@ public class AdminUserController {
         u.setUsername(uname);
         u.setRole(role);
         u.setPasswd(md5Upper(pwd));
-
-        //  添加：设置创建时间
         u.setC_time(getCurrentTime());
 
         int inserted = userMapper.insert(u);
@@ -200,16 +213,21 @@ public class AdminUserController {
         }
 
         if (role == 1 && orgid != null && !orgid.trim().isEmpty()) {
+            String targetOrgId = orgid.trim();
+
             Orgrole or = new Orgrole();
             or.setUserid(uid);
-            or.setOrgid(orgid.trim());
+            or.setOrgid(targetOrgId);
             orgroleMapper.insert(or);
+
+            // 关键修复：新学生加入班级后，自动补齐该班历史课程
+            initStudentScoresForOrg(uid, targetOrgId);
         }
 
         return Map.of("success", true, "msg", "创建成功");
     }
 
-    //  添加：获取当前时间的方法
+    // 添加：获取当前时间的方法
     private String getCurrentTime() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return sdf.format(new Date());
@@ -227,8 +245,44 @@ public class AdminUserController {
         }
     }
 
+    /**
+     * 给指定学生补齐某个班级已经开设过的所有课程成绩记录。
+     * 这样“课程创建后再新增学生”时，新学生也能看到历史课程。
+     */
+    private void initStudentScoresForOrg(String uid, String orgId) {
+        if (uid == null || uid.trim().isEmpty() || orgId == null || orgId.trim().isEmpty()) {
+            return;
+        }
+
+        List<OrgCourse> orgCourses = orgCourseMapper.selectList(
+                new QueryWrapper<OrgCourse>().eq("orgid", orgId.trim())
+        );
+        if (orgCourses == null || orgCourses.isEmpty()) {
+            return;
+        }
+
+        for (OrgCourse oc : orgCourses) {
+            if (oc == null || oc.getCourseid() == null || oc.getCourseid().trim().isEmpty()) {
+                continue;
+            }
+
+            Long exists = scoreMapper.selectCount(
+                    new QueryWrapper<Score>()
+                            .eq("cnumber", oc.getCourseid().trim())
+                            .eq("snumber", uid)
+            );
+
+            if (exists == null || exists == 0) {
+                Score score = new Score();
+                score.setCnumber(oc.getCourseid().trim());
+                score.setSnumber(uid);
+                scoreMapper.insert(score);
+            }
+        }
+    }
+
     @PostMapping("/delete")
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> deleteUsers(@RequestParam("uids") String uids, HttpSession session) {
         if (!isAdminLoggedIn(session)) {
             return Map.of("success", false, "msg", "管理员未登录");
@@ -247,9 +301,12 @@ public class AdminUserController {
             if (uid.isEmpty()) continue;
 
             User user = userMapper.selectOne(new QueryWrapper<User>().eq("uid", uid));
-            if (user == null) { skipped++; continue; }
+            if (user == null) {
+                skipped++;
+                continue;
+            }
 
-            //  只允许删学生/老师（1/2），管理员(0/3)跳过
+            // 只允许删学生/老师（1/2），管理员(0/3)跳过
             if (!(user.getRole() == 1 || user.getRole() == 2)) {
                 skipped++;
                 continue;
@@ -266,7 +323,6 @@ public class AdminUserController {
         return Map.of("success", true, "msg", "删除成功，删除数量：" + deleted + "，跳过：" + skipped);
     }
 
-
     @PostMapping("/initPwd")
     public Map<String, Object> initPwd(@RequestParam("uids") String uids, HttpSession session) {
         if (!isAdminLoggedIn(session)) {
@@ -280,7 +336,7 @@ public class AdminUserController {
         int updated = 0;
         int skipped = 0;
 
-        //  初始化密码（要固定啥就改这里）
+        // 初始化密码（要固定啥就改这里）
         String initRawPwd = "123456";
         String initHash = md5Upper(initRawPwd);
 
@@ -289,9 +345,12 @@ public class AdminUserController {
             if (uid.isEmpty()) continue;
 
             User user = userMapper.selectOne(new QueryWrapper<User>().eq("uid", uid));
-            if (user == null) { skipped++; continue; }
+            if (user == null) {
+                skipped++;
+                continue;
+            }
 
-            //  只允许重置学生/老师；管理员跳过
+            // 只允许重置学生/老师；管理员跳过
             if (!(user.getRole() == 1 || user.getRole() == 2)) {
                 skipped++;
                 continue;
@@ -337,8 +396,8 @@ public class AdminUserController {
                 if (row == null) continue;
 
                 String username = cellToString(row.getCell(0)).trim();
-                String passwd   = cellToString(row.getCell(1)).trim();
-                String roleStr  = cellToString(row.getCell(2)).trim();
+                String passwd = cellToString(row.getCell(1)).trim();
+                String roleStr = cellToString(row.getCell(2)).trim();
                 String orgNameOrId = cellToString(row.getCell(3)).trim();
 
                 if (username.isEmpty()) continue; // 空行跳过
@@ -408,12 +467,14 @@ public class AdminUserController {
                     continue;
                 }
 
-                // 学生写入 st_orgrole
+                // 学生写入 st_orgrole，并补齐历史课程记录
                 if (role == 1 && orgId != null) {
                     Orgrole or = new Orgrole();
                     or.setUserid(uid);
                     or.setOrgid(orgId);
                     orgroleMapper.insert(or);
+
+                    initStudentScoresForOrg(uid, orgId);
                 }
 
                 ok++;

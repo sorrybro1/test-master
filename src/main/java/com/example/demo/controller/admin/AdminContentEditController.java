@@ -84,19 +84,18 @@ public class AdminContentEditController {
         param.put("title", title.trim());
 
         // BLOB：避免 CKEditor 未就绪把字段置空：空就保留旧值
-        String finalCode = (codetext != null && !codetext.trim().isEmpty())
-                ? codetext
-                : (old.getCodetext() == null ? "" : old.getCodetext());
-        param.put("codetextBytes", finalCode.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-
         String finalContent = (content != null && !content.trim().isEmpty()) ? content : old.getContent();
         param.put("contentBytes", (finalContent == null ? "" : finalContent).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-        param.put("experPurpose", pickNonBlank(experPurpose, old.getExperPurpose()));
-        param.put("experTheory", pickNonBlank(experTheory, old.getExperTheory()));
-        param.put("ariParameter", pickNonBlank(ariParameter, old.getAriParameter()));
-        param.put("ariFlow", pickNonBlank(ariFlow, old.getAriFlow()));
-        param.put("comResults", pickNonBlank(comResults, old.getComResults()));
+        String finalCodetext = (codetext != null && !codetext.trim().isEmpty()) ? codetext : old.getCodetext();
+        param.put("codetextBytes", (finalCodetext == null ? "" : finalCodetext).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        // 保留 HTML 原样
+        param.put("experPurpose", experPurpose != null ? experPurpose : old.getExperPurpose());
+        param.put("experTheory", experTheory != null ? experTheory : old.getExperTheory());
+        param.put("ariParameter", ariParameter != null ? ariParameter : old.getAriParameter());
+        param.put("ariFlow", ariFlow != null ? ariFlow : old.getAriFlow());
+        param.put("comResults", comResults != null ? comResults : old.getComResults());
 
         // 文件：没传新文件就保留旧路径
         String scode = old.getScode(); // 源码下载 -> uploads/code

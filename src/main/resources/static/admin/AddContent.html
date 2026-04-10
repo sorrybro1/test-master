@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="../vendor/font-awesome/css/fontawesome-all.min.css">
     <link rel="stylesheet" href="../css/styles.css">
     <script>
-        // 关键：强制 CKEditor 资源路径从 /ckeditor/ 开始（避免变成 /resources/ckeditor/）//admin
         window.CKEDITOR_BASEPATH = (window.CTX || "") + "/ckeditor/";
     </script>
     <link rel="stylesheet" href="/ckeditor/plugins/jdmath/mathquill-0.10.1/mathquill.css">
@@ -17,7 +16,6 @@
 
 <body class="sidebar-fixed header-fixed">
 <div class="page-wrapper">
-    <!-- 公共菜单 -->
     <div id="publicMenu"></div>
 
     <div class="content">
@@ -96,8 +94,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label class="form-control-label">内容定义:</label>
-                                            <textarea class="ckeditor" id="content"></textarea>
-                                            <input id="content_hidden" name="content" type="hidden">
+                                            <textarea id="content" name="content"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -106,8 +103,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label class="form-control-label">实验目的:</label>
-                                            <textarea class="ckeditor" id="experPurpose"></textarea>
-                                            <input id="experPurpose_hidden" name="experPurpose" type="hidden">
+                                            <textarea id="experPurpose" name="experPurpose"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -116,8 +112,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label class="form-control-label">实验原理:</label>
-                                            <textarea class="ckeditor" id="experTheory"></textarea>
-                                            <input id="experTheory_hidden" name="experTheory" type="hidden">
+                                            <textarea id="experTheory" name="experTheory"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -126,8 +121,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label class="form-control-label">算法参数:</label>
-                                            <textarea class="ckeditor" id="ariParameter"></textarea>
-                                            <input id="ariParameter_hidden" name="ariParameter" type="hidden">
+                                            <textarea id="ariParameter" name="ariParameter"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -136,8 +130,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label class="form-control-label">算法流程:</label>
-                                            <textarea class="ckeditor" id="ariFlow"></textarea>
-                                            <input id="ariFlow_hidden" name="ariFlow" type="hidden">
+                                            <textarea id="ariFlow" name="ariFlow"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -146,8 +139,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label class="form-control-label">运行结果:</label>
-                                            <textarea class="ckeditor" id="comResults"></textarea>
-                                            <input id="comResults_hidden" name="comResults" type="hidden">
+                                            <textarea id="comResults" name="comResults"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -165,7 +157,6 @@
     </div>
 </div>
 
-<!-- loading modal -->
 <div class="modal fade" id="alertModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -188,24 +179,28 @@
 <script src="../js/demo.js"></script>
 <script src="../js/admin-common.js"></script>
 <script>
-    // 强制 CKEditor 资源路径从 /ckeditor/ 开始
     window.CKEDITOR_BASEPATH = (window.CTX || "") + "/ckeditor/";
 </script>
 <script src="../ckeditor/ckeditor.js"></script>
 
 <script>
-    // 加载公共菜单、foot
+    const RICH_TEXT_IDS = [
+        "content",
+        "experPurpose",
+        "experTheory",
+        "ariParameter",
+        "ariFlow",
+        "comResults"
+    ];
+
     $(function () {
         $("#publicMenu").load("/admin/publicMenu.html");
         $("#foot").load("/admin/foot.html");
 
-        // 拉分类（Type）
-        // 这里我用一个“新接口”：/admin-api/types/listAll，避免和你现有的分页接口冲突
         $.ajax({
             type: "GET",
             url: CTX + "/admin-api/types/listAll",
             success: function (res) {
-                // 兼容两种返回：{total,list} 或直接数组
                 let list = res && res.list ? res.list : (Array.isArray(res) ? res : []);
                 let htm = "";
                 for (let i = 0; i < list.length; i++) {
@@ -219,7 +214,32 @@
                 alert("获取分类失败");
             }
         });
+
+        initEditors();
     });
+
+    function initEditors() {
+        if (!window.CKEDITOR) {
+            console.error("CKEDITOR 未加载");
+            return;
+        }
+
+        CKEDITOR.disableAutoInline = true;
+
+        RICH_TEXT_IDS.forEach(function (id) {
+            if (CKEDITOR.instances[id]) {
+                CKEDITOR.instances[id].destroy(true);
+            }
+
+            CKEDITOR.replace(id, {
+                allowedContent: true,
+                forcePasteAsPlainText: false,
+                pasteFromWordRemoveFontStyles: false,
+                pasteFromWordRemoveStyles: false,
+                height: 260
+            });
+        });
+    }
 
     function backToList() {
         window.location.href = CTX + "/admin/stContent.html";
@@ -232,29 +252,126 @@
         return "";
     }
 
+    function showLoading(text) {
+        $("#modal_message").html("<h2>" + (text || "正在上传中...") + "</h2>");
+        $("#alertModal").modal("show");
+    }
+
+    function hideLoading() {
+        $("#alertModal").modal("hide");
+    }
+
+    function getFileExt(filename) {
+        if (!filename || filename.indexOf(".") === -1) return "";
+        return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+    }
+
+    function validateFiles() {
+        const programFile = document.getElementById("import_scode")?.files?.[0];
+        const codeFile = document.getElementById("import_sdll")?.files?.[0];
+
+        if (programFile) {
+            const ext = getFileExt(programFile.name);
+            const allow = ["exe", "rar"];
+            if (!allow.includes(ext)) {
+                return "程序运行文件格式不正确，只允许上传：.exe 或 .rar";
+            }
+        }
+
+        if (codeFile) {
+            const ext = getFileExt(codeFile.name);
+            const allow = ["rar", "zip"];
+            if (!allow.includes(ext)) {
+                return "源码下载文件格式不正确，只允许上传：.rar 或 .zip";
+            }
+        }
+
+        return "";
+    }
+
+    function parseAjaxError(xhr) {
+        try {
+            if (xhr.responseJSON && xhr.responseJSON.msg) {
+                return xhr.responseJSON.msg;
+            }
+
+            if (xhr.responseText) {
+                const txt = xhr.responseText.trim();
+
+                try {
+                    const json = JSON.parse(txt);
+                    if (json.msg) return json.msg;
+                    if (json.message) return json.message;
+                    if (json.error) return json.error;
+                } catch (e) {
+                    // 不是 JSON，继续往下判断
+                }
+
+                if (txt.includes("Maximum upload size exceeded")) {
+                    return "上传失败：文件过大，超过服务器允许的上传大小";
+                }
+                if (txt.includes("Incorrect string value")) {
+                    return "上传失败：内容中包含数据库当前字符集不支持的特殊字符，请把数据库相关字段改为 utf8mb4";
+                }
+                if (txt.includes("Multipart")) {
+                    return "上传失败：表单文件解析异常，请检查文件是否损坏或大小是否超限";
+                }
+                if (txt.includes("SQLSyntaxErrorException")) {
+                    return "上传失败：数据库字段或表结构和当前代码不一致";
+                }
+                if (txt.includes("File format not supported")) {
+                    return "上传失败：文件格式不支持";
+                }
+
+                return txt.length > 300 ? "服务器内部错误，请查看后端日志" : txt;
+            }
+
+            if (xhr.status === 413) {
+                return "上传失败：文件过大";
+            }
+            if (xhr.status === 404) {
+                return "上传失败：接口不存在，请检查请求地址";
+            }
+            if (xhr.status === 415) {
+                return "上传失败：请求格式不正确";
+            }
+            if (xhr.status === 500) {
+                return "上传失败：服务器内部错误，请查看后端日志";
+            }
+
+            return "上传失败：HTTP " + xhr.status;
+        } catch (e) {
+            return "上传失败：未知错误";
+        }
+    }
+
     function submitAdd() {
         const fd = new FormData();
 
-        // 普通 input
         const tidVal = $("input[name='tid']:checked").val();
-        if (!tidVal) {
-            alert("请选择分类（tid不能为空）");
-            return;
-        }
-
         if (!tidVal || isNaN(Number(tidVal))) {
-            alert("请选择分类（tid不能为空）");
+            alert("提交错误：请选择分类（tid不能为空）");
             return;
         }
+
+        const titleVal = ($("#title").val() || "").trim();
+        if (!titleVal) {
+            alert("提交错误：标题不能为空");
+            return;
+        }
+
+        const fileError = validateFiles();
+        if (fileError) {
+            alert("提交错误：" + fileError);
+            return;
+        }
+
         fd.append("tid", tidVal);
-
         fd.append("pid", $("#pid").val() || "");
-        fd.append("title", $("#title").val() || "");
+        fd.append("title", titleVal);
 
-        // 你源码框如果不是 CKEditor，就保持用 textarea 的值
         fd.append("codetext", $("#codetext").val() || "");
 
-        //  6 个 CKEditor
         fd.append("content", getCk("content"));
         fd.append("experPurpose", getCk("experPurpose"));
         fd.append("experTheory", getCk("experTheory"));
@@ -262,7 +379,6 @@
         fd.append("ariFlow", getCk("ariFlow"));
         fd.append("comResults", getCk("comResults"));
 
-        // 文件：只有选了才 append（避免 multipart 解析炸）
         const scodeFile = document.getElementById("import_scode")?.files?.[0];
         if (scodeFile) fd.append("import_scode", scodeFile);
 
@@ -275,22 +391,44 @@
             data: fd,
             processData: false,
             contentType: false,
-            success: function(res) {
+
+            beforeSend: function () {
+                showLoading("正在上传中...");
+            },
+
+            xhr: function () {
+                const xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener("progress", function (evt) {
+                    if (evt.lengthComputable) {
+                        const percent = Math.round((evt.loaded / evt.total) * 100);
+                        $("#modal_message").html("<h2>正在上传中... " + percent + "%</h2>");
+                    }
+                }, false);
+                return xhr;
+            },
+
+            success: function (res) {
                 if (res && res.success) {
                     alert("提交成功");
                     window.location.href = CTX + "/admin/stContent.html";
                 } else {
-                    alert(res?.msg || "提交失败");
+                    alert("提交错误：" + ((res && res.msg) ? res.msg : "提交失败"));
                 }
             },
-            error: function(xhr) {
-                alert("提交失败：" + (xhr.responseText || xhr.status));
-                console.log(xhr);
+
+            error: function (xhr) {
+                const msg = parseAjaxError(xhr);
+                alert("提交错误：" + msg);
+                console.log("提交失败详情：", xhr);
+            },
+
+            complete: function () {
+                hideLoading();
             }
         });
     }
 
-        document.addEventListener("click", function(e) {
+    document.addEventListener("click", function(e) {
         const btn = e.target.closest(".sidebar-toggle");
         if (!btn) return;
         e.preventDefault();
